@@ -4,16 +4,36 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
-env/
-*.egg-info/
-dist/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environment
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environments
 .env
+.venv
+env/
+venv/
+ENV/
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
@@ -23,14 +43,5 @@ build/
 .DS_Store
 Thumbs.db
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Database
-*.db
-*.sqlite3
-
-# Logs
-*.log
+# Project specific
+backend/.pytest_cache/
