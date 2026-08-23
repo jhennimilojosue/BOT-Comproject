@@ -32,7 +32,7 @@ Antes de modificar o crear cualquier código debes realizar una fase inicial de 
 
 Debes revisar como mínimo:
 
-docs/README.md
+README.md
 
 docs/09_agente/opencode.md
 
@@ -47,8 +47,6 @@ docs/04_modulos/
 docs/05_catalogos/
 
 docs/06_contratos/
-
-docs/07_persistencia/
 
 docs/08_api/
 
@@ -100,9 +98,9 @@ Fuente:
 docs/01_contexto/02_glosario.md
 
 Área:
-Proceso de negocio
+Arquitectura de módulos
 Fuente:
-docs/01_contexto/03_analisis_proceso_negocio.md
+docs/01_contexto/03_arquitectura_modulos.md
 
 Área:
 Módulos
@@ -162,7 +160,7 @@ docs/06_contratos/case_contract.md
 Área:
 Persistencia
 Fuente:
-docs/07_persistencia/modelo_datos.md
+docs/04_modulos/gestion_casos/modelo_datos_modulo.md
 
 Área:
 API

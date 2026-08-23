@@ -473,7 +473,7 @@ La implementación inicial podrá mantener el catálogo como archivo configurabl
 ```
 backend/
 │
-├── business_catalogs/
+├── catalog_service/
 │   └── catalogo_estados.xlsx
 │
 └── application/

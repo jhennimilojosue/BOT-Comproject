@@ -635,14 +635,14 @@ Processing
 Códigos iniciales:
 
 ```
-DATOS_INCOMPLETOS
-RESPONSABLE_NO_SELECCIONADO
-RESPONSABLE_NO_VALIDO
-ESTADO_NO_PROCESABLE
-CATEGORIA_NO_CONFIGURADA
-RANGO_NO_CONFIGURADO
-DUPLICADO
-RESULTADO_INVALIDO
+INCOMPLETE_DATA
+RESPONSIBLE_NOT_SELECTED
+RESPONSIBLE_INVALID
+STATUS_NOT_PROCESSABLE
+CATEGORY_NOT_CONFIGURED
+TIME_RANGE_NOT_CONFIGURED
+DUPLICATE
+INVALID_RESULT
 ```
 
 La lista definitiva deberá mantenerse alineada con los documentos oficiales de negocio.
@@ -975,55 +975,13 @@ Estas definiciones pertenecen a sus respectivos documentos.
 
 # 31. Decisiones de la versión 1.3
 
-### MGC-01 — Processing como contexto de ejecución
-
-Todo procesamiento de casos deberá estar asociado a un `Processing`.
-
-### MGC-02 — Case como información original
-
-`Case` representa exclusivamente información proveniente de Aranda.
-
-### MGC-03 — Responsable de ejecución
-
-El responsable seleccionado se representa mediante:
+Las reglas de negocio del módulo Gestión de Casos (MGC-01 a MGC-20) están definidas en:
 
 ```
-Processing.responsible_id
+04_modulos/gestion_casos/modelo_datos_modulo.md
 ```
 
-### MGC-04 — Rechazo contextual
-
-Los rechazos pertenecen a:
-
-```
-Processing + Case
-```
-
-y se almacenan mediante `ProcessingRejection`.
-
-### MGC-05 — Procesamiento parcial
-
-Una ejecución puede finalizar correctamente aunque contenga casos rechazados.
-
-### MGC-06 — Exclusividad
-
-Un caso no puede estar procesado y rechazado simultáneamente dentro del mismo `Processing`.
-
-### MGC-07 — Integridad de carga
-
-Un resultado solo puede asociarse a un `Case` perteneciente al mismo `Upload` del `Processing`.
-
-### MGC-08 — Separación de responsabilidades
-
-Gestión de Casos prepara los casos; `Estimation Engine` realiza el proceso posterior de estimación.
-
-### MGC-09 — Catálogos centralizados
-
-Toda información catalogada será consultada mediante `Catalog Service`.
-
-### MGC-10 — Trazabilidad
-
-El sistema deberá permitir seguir:
+Este documento (`gestion_casos.md`) define el comportamiento del módulo, mientras que `modelo_datos_modulo.md` define las reglas de negocio, el modelo de datos y las validaciones.
 
 ```
 Upload

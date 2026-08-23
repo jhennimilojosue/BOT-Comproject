@@ -220,7 +220,6 @@ Los campos obligatorios serán:
 ```
 case_code
 responsible_name
-user_name
 project
 registered_at
 status
@@ -229,7 +228,13 @@ description
 solution
 ```
 
-Todos deberán contener información válida.
+Los campos opcionales serán:
+
+```
+user_name
+```
+
+Todos los campos obligatorios deberán contener información válida. Los opcionales podrán estar vacíos o nulos.
 
 ---
 
@@ -259,7 +264,7 @@ No puede estar vacío.
 user_name
 ```
 
-No puede estar vacío.
+Podrá estar vacío.
 
 ### Proyecto
 
@@ -311,7 +316,7 @@ No puede estar vacía.
 description
 ```
 
-No puede estar vacía.
+Podrá estar vacía.
 
 ### Solución
 
@@ -319,7 +324,7 @@ No puede estar vacía.
 solution
 ```
 
-No puede estar vacía.
+Podrá estar vacía.
 
 ---
 
@@ -439,7 +444,7 @@ La validación de que el responsable seleccionado:
 - Está activo.
 - Puede ser utilizado.
 
-corresponde al `Business Catalog Service`/servicio de aplicación antes de ejecutar Gestión de Casos.
+corresponde al `Catalog Service`/servicio de aplicación antes de ejecutar Gestión de Casos.
 
 Por lo tanto, Gestión de Casos recibe un responsable válido para la ejecución.
 
@@ -452,7 +457,7 @@ El módulo no deberá mantener una lista independiente de estados procesables.
 Deberá consultar:
 
 ```
-Business Catalog Service
+Catalog Service
         ↓
 Catálogo de Estados
 ```
@@ -477,7 +482,7 @@ El flujo será:
 ```
 Case.status
       ↓
-Business Catalog Service
+Catalog Service
       ↓
 Catálogo de Estados
       ↓
@@ -534,7 +539,7 @@ Categoría generada por IA
 Gestión de Casos consultará:
 
 ```
-Business Catalog Service
+Catalog Service
         ↓
 Catálogo de Tiempos
 ```
@@ -673,23 +678,23 @@ Ejemplo:
 Los códigos iniciales serán:
 
 ```
-DATOS_INCOMPLETOS
-RESPONSABLE_NO_SELECCIONADO
-RESPONSABLE_NO_VALIDO
-ESTADO_NO_PROCESABLE
-CATEGORIA_NO_CONFIGURADA
-RANGO_NO_CONFIGURADO
-DUPLICADO
-RESULTADO_INVALIDO
+INCOMPLETE_DATA
+RESPONSIBLE_NOT_SELECTED
+RESPONSIBLE_INVALID
+STATUS_NOT_PROCESSABLE
+CATEGORY_NOT_CONFIGURED
+TIME_RANGE_NOT_CONFIGURED
+DUPLICATE
+INVALID_RESULT
 ```
 
 Sin embargo, Gestión de Casos utilizará principalmente los relacionados con su propia responsabilidad:
 
 ```
-DATOS_INCOMPLETOS
-ESTADO_NO_PROCESABLE
-CATEGORIA_NO_CONFIGURADA
-DUPLICADO
+INCOMPLETE_DATA
+STATUS_NOT_PROCESSABLE
+CATEGORY_NOT_CONFIGURED
+DUPLICATE
 ```
 
 Los demás códigos pertenecen a otras etapas del procesamiento.
@@ -835,7 +840,7 @@ Case Contract
      ▼
 Gestión de Casos
      │
-     ├── Business Catalog Service
+     ├── Catalog Service
      │      ├── Catálogo de Estados
      │      └── Catálogo de Tiempos
      │
@@ -1161,15 +1166,15 @@ El módulo deberá contar como mínimo con pruebas para:
 
 ```
 Case válido
-Case sin case_code
-Case sin responsible_name
-Case sin user_name
-Case sin project
-Case sin registered_at
-Case sin status
-Case sin final_category
-Case sin description
-Case sin solution
+Case sin case_code (rechazado)
+Case sin responsible_name (rechazado)
+Case sin project (rechazado)
+Case sin registered_at (rechazado)
+Case sin status (rechazado)
+Case sin final_category (rechazado)
+Case sin user_name (válido - campo opcional)
+Case sin description (válido - campo opcional)
+Case sin solution (válido - campo opcional)
 ```
 
 ### Responsable
@@ -1278,12 +1283,23 @@ Con las decisiones que acabamos de tomar, el contrato queda unificado así:
 | Resultado final | `Estimation` |
 | Rechazo | `ProcessingRejection` |
 
-Y los tres campos que estaban en discusión quedan definitivamente:
+Los campos obligatorios quedan definitivamente:
 
 ```
-user_name       → OBLIGATORIO
-description     → OBLIGATORIO
-solution        → OBLIGATORIO
+case_code         → OBLIGATORIO
+responsible_name  → OBLIGATORIO
+project           → OBLIGATORIO
+registered_at     → OBLIGATORIO
+status            → OBLIGATORIO
+final_category    → OBLIGATORIO
+description       → OBLIGATORIO
+solution          → OBLIGATORIO
+```
+
+El campo opcional queda definitivamente:
+
+```
+user_name         → OPCIONAL
 ```
 
 Además:
@@ -1306,7 +1322,7 @@ Case Contract
        ▼
 Gestión de Casos
        │
-       ├── Business Catalog Service
+       ├── Catalog Service
        │
        ▼
 Case procesable / rechazado

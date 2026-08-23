@@ -47,7 +47,7 @@ La V1 estará organizada conceptualmente de la siguiente manera:
  Case Validator          Case Filter          Case Normalizer
         │                      │
         │                      ▼
-        │             Business Catalog Service
+        │             Catalog Service
         │                      │
         │              ┌───────┼────────┐
         │              ▼       ▼        ▼
@@ -63,7 +63,7 @@ La V1 estará organizada conceptualmente de la siguiente manera:
                        ┌───────┴───────┐
                        │               │
                        ▼               ▼
-               Business Catalog    AI Service
+               Catalog Service    AI Service
                     Service             │
                        │                 ▼
                        │              Ollama
@@ -202,7 +202,7 @@ Errores de procesamiento
 
 El `Excel Service` no deberá decidir si un caso es procesable.
 
-Esa responsabilidad corresponde a Gestión de Casos utilizando las reglas y configuraciones proporcionadas por el **Business Catalog Service**.
+Esa responsabilidad corresponde a Gestión de Casos utilizando las reglas y configuraciones proporcionadas por el **Catalog Service**.
 
 ---
 
@@ -246,7 +246,7 @@ Solucionado
 Cerrado
 ```
 
-La determinación de si un estado es procesable deberá realizarse mediante el **Business Catalog Service**.
+La determinación de si un estado es procesable deberá realizarse mediante el **Catalog Service**.
 
 Gestión de Casos no deberá contener directamente una lista codificada de estados procesables.
 
@@ -301,7 +301,7 @@ Cuando necesite información de un catálogo deberá utilizar:
 ```
 Case Filter
      ↓
-Business Catalog Service
+Catalog Service
 ```
 
 ---
@@ -370,24 +370,24 @@ Categoría final
 Estado
 ```
 
-Posteriormente, el `Estimation Engine` incorporará al contexto el rango de tiempo autorizado obtenido mediante el **Business Catalog Service**.
+Posteriormente, el `Estimation Engine` incorporará al contexto el rango de tiempo autorizado obtenido mediante el **Catalog Service**.
 
 El `Case Context Builder` únicamente deberá incluir información necesaria y autorizada.
 
 ---
 
-# 12. Business Catalog Service
+# 12. Catalog Service
 
 ## Responsabilidad
 
 Proporcionar acceso centralizado a los catálogos utilizados por el sistema.
 
-El **Business Catalog Service** será el único servicio autorizado para consultar los catálogos de negocio.
+El **Catalog Service** será el único servicio autorizado para consultar los catálogos de negocio.
 
 ## Catálogos V1
 
 ```
-Business Catalog Service
+Catalog Service
           │
           ├── Catálogo de Estados
           │
@@ -414,7 +414,7 @@ Correcto:
 ```
 Componente
      ↓
-Business Catalog Service
+Catalog Service
      ↓
 Catálogo
 ```
@@ -678,14 +678,14 @@ Los códigos deberán ser estandarizados.
 Inicialmente:
 
 ```
-DATOS_INCOMPLETOS
-RESPONSABLE_NO_SELECCIONADO
-RESPONSABLE_NO_VALIDO
-ESTADO_NO_PROCESABLE
-CATEGORIA_NO_CONFIGURADA
-RANGO_NO_CONFIGURADO
-DUPLICADO
-RESULTADO_INVALIDO
+INCOMPLETE_DATA
+RESPONSIBLE_NOT_SELECTED
+RESPONSIBLE_INVALID
+STATUS_NOT_PROCESSABLE
+CATEGORY_NOT_CONFIGURED
+TIME_RANGE_NOT_CONFIGURED
+DUPLICATE
+INVALID_RESULT
 ```
 
 La lista deberá mantenerse alineada con:
@@ -726,7 +726,7 @@ Resultado de estimación
 ```
 Categoría final
        ↓
-Business Catalog Service
+Catalog Service
        ↓
 Categoría configurada
        ↓
@@ -919,18 +919,18 @@ No deberá implementarse este componente en V1 si no existe una necesidad real d
 | Gestión de Archivos | Ninguna |
 | Upload | Gestión de Archivos |
 | Excel Service | Gestión de Archivos, Upload |
-| Gestión de Casos | Excel Service, Business Catalog Service, Case Repository |
+| Gestión de Casos | Excel Service, Catalog Service, Case Repository |
 | Case Validator | Gestión de Casos |
-| Case Filter | Gestión de Casos, Business Catalog Service |
+| Case Filter | Gestión de Casos, Catalog Service |
 | Case Normalizer | Gestión de Casos |
 | Organización de Casos | Gestión de Casos |
 | Case Context Builder | Gestión de Casos |
-| Business Catalog Service | Persistencia de catálogos |
+| Catalog Service | Persistencia de catálogos |
 | Case Repository | Base de datos |
 | Processing | Application Service, Upload |
 | Resultados | Processing, Case Repository |
 | Rechazos | Processing, Case Repository |
-| Estimation Engine | Business Catalog Service, AI Service |
+| Estimation Engine | Catalog Service, AI Service |
 | AI Service | Ollama |
 | Vista Previa | Resultados procesados |
 | Exportación | Resultados procesados |
@@ -963,7 +963,7 @@ Gestión de Casos
    │
    ├──► Case Validator
    │
-   ├──► Case Filter ─────────► Business Catalog Service
+   ├──► Case Filter ─────────► Catalog Service
    │
    ├──► Case Normalizer
    │
@@ -975,7 +975,7 @@ Gestión de Casos
           ┌─────────┴─────────┐
           │                   │
           ▼                   ▼
- Business Catalog        AI Service
+ Catalog Service        AI Service
  Service                      │
           │                   ▼
           │                 Ollama
@@ -1036,7 +1036,7 @@ El acceso será:
 ```
 Componente
      ↓
-Business Catalog Service
+Catalog Service
      ↓
 Catálogo
 ```
@@ -1332,7 +1332,7 @@ El `Estimation Engine` controla que el tiempo esté dentro del rango autorizado.
 
 ### DA-08 — Catálogos
 
-El acceso a catálogos se realizará exclusivamente mediante `Business Catalog Service`.
+El acceso a catálogos se realizará exclusivamente mediante `Catalog Service`.
 
 ### DA-09 — Datos originales
 
@@ -1359,4 +1359,4 @@ La integración automática con COMProject queda fuera del alcance de V1.
 | 1.0 | En construcción | Definición inicial de módulos |
 | 1.1 | Definido | Centralización de catálogos, `Catalog Service`, `Case Repository` y regla de creación de módulos |
 | 1.2 | Definido | Incorporación de `Case Grouper`, separación entre información original y resultados, precisión de responsabilidades de `AI Service` y `Estimation Engine`, y regla de consistencia documental |
-| **1.3** | **Definido** | Incorporación formal de `Upload` y `Processing`, definición de resultados y rechazos asociados a ejecuciones, trazabilidad mediante `processing_id`, aclaración del procesamiento V1, unificación de `Business Catalog Service` y eliminación de `Case Grouper` como módulo independiente obligatorio |
+| **1.3** | **Definido** | Incorporación formal de `Upload` y `Processing`, definición de resultados y rechazos asociados a ejecuciones, trazabilidad mediante `processing_id`, aclaración del procesamiento V1, unificación de `Catalog Service` y eliminación de `Case Grouper` como módulo independiente obligatorio |

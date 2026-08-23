@@ -145,21 +145,29 @@ El objeto lógico de `Case` será:
 
 # 5. Definición de Campos
 
-| Campo | Tipo | Obligatorio | Origen | Descripción |
-| --- | --- | --- | --- | --- |
-| `id` | UUID | Sí | Sistema | Identificador interno |
-| `upload_id` | UUID | Sí | Sistema | Upload del cual proviene |
-| `case_code` | String | Sí | Excel | Código original del caso |
-| `responsible_name` | String | Sí | Excel | Responsable original de Aranda |
-| `responsible_id` | UUID | No | Sistema | Referencia al catálogo de responsables |
-| `user_name` | String | No | Excel | Usuario asociado |
-| `project` | String | Sí | Excel | Proyecto asociado |
-| `registered_at` | DateTime | Sí | Excel | Fecha del caso |
-| `status` | String | Sí | Excel | Estado original |
-| `final_category` | String | Sí | Excel | Categoría final |
-| `description` | Text | No | Excel | Descripción original |
-| `solution` | Text | No | Excel | Solución original |
-| `created_at` | DateTime | Sí | Sistema | Fecha de persistencia |
+| Campo | Tipo | Longitud | Obligatorio | Origen | Descripción |
+| --- | --- | --- | --- | --- | --- |
+| `id` | UUID | 36 | Sí | Sistema | Identificador interno |
+| `upload_id` | UUID | 36 | Sí | Sistema | Upload del cual proviene |
+| `case_code` | String | 50 | Sí | Excel | Código original del caso |
+| `responsible_name` | String | 200 | Sí | Excel | Responsable original de Aranda |
+| `responsible_id` | UUID | 36 | No | Sistema | Referencia al catálogo de responsables |
+| `user_name` | String | 200 | No | Excel | Usuario asociado |
+| `project` | String | 200 | Sí | Excel | Proyecto asociado |
+| `registered_at` | DateTime | - | Sí | Excel | Fecha del caso |
+| `status` | String | 100 | Sí | Excel | Estado original |
+| `final_category` | String | 200 | Sí | Excel | Categoría final |
+| `description` | Text | - | Sí | Excel | Descripción original |
+| `solution` | Text | - | Sí | Excel | Solución original |
+| `created_at` | DateTime | - | Sí | Sistema | Fecha de persistencia |
+
+### 5.1 Formato de fechas
+
+Todos los campos DateTime deberán almacenarse en formato ISO 8601:
+- `registered_at`: Solo fecha → `YYYY-MM-DD`
+- `created_at`: Fecha y hora → `YYYY-MM-DDTHH:MM:SS`
+
+**Zona horaria:** UTC para todos los campos de tipo DateTime.
 
 ---
 
@@ -692,14 +700,14 @@ project
 registered_at
 status
 final_category
+description
+solution
 ```
 
 Los campos:
 
 ```
 user_name
-description
-solution
 responsible_id
 ```
 

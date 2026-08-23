@@ -20,7 +20,7 @@ Su función es proporcionar una fuente única y centralizada para determinar:
 - Si una configuración se encuentra activa.
 - Información adicional relacionada con la configuración.
 
-El catálogo será utilizado por el `Business Catalog Service` y consultado por los componentes que requieran información sobre los rangos autorizados.
+El catálogo será utilizado por el `Catalog Service` y consultado por los componentes que requieran información sobre los rangos autorizados.
 
 > El Catálogo de Tiempos **no calcula, selecciona ni genera el tiempo final de un caso**. Únicamente proporciona el rango autorizado que deberá respetar el proceso de estimación.
 > 
@@ -38,7 +38,7 @@ En la V1:
 - Una categoría sin configuración activa no podrá continuar hacia el `Estimation Engine`.
 - Los rangos no podrán ser modificados automáticamente por la IA.
 - La aplicación no permitirá crear reglas automáticamente.
-- El catálogo será consultado exclusivamente mediante el `Business Catalog Service`.
+- El catálogo será consultado exclusivamente mediante el `Catalog Service`.
 
 ---
 
@@ -126,7 +126,7 @@ Flujo:
 ```
 Case.final_category
         ↓
-Business Catalog Service
+Catalog Service
         ↓
 Catálogo de Tiempos
         ↓
@@ -156,7 +156,7 @@ La estructura propuesta para V1 será:
 
 Los nombres anteriores representan la estructura lógica del catálogo.
 
-La fuente física utilizada en V1 podrá mantener los nombres definidos para el archivo de negocio, siempre que el `Business Catalog Service` realice la transformación correspondiente.
+La fuente física utilizada en V1 podrá mantener los nombres definidos para el archivo de negocio, siempre que el `Catalog Service` realice la transformación correspondiente.
 
 ---
 
@@ -239,7 +239,7 @@ Ejemplo:
 ```
 final_category
        ↓
-Business Catalog Service
+Catalog Service
        ↓
 Configuración encontrada
        ↓
@@ -305,13 +305,13 @@ La categoría final constituye la referencia oficial para consultar el rango.
 
 # 12. Flujo de Consulta
 
-La consulta del rango deberá realizarse mediante el `Business Catalog Service`.
+La consulta del rango deberá realizarse mediante el `Catalog Service`.
 
 ```
 Case.final_category
         │
         ▼
-Business Catalog Service
+Catalog Service
         │
         ▼
 Catálogo de Tiempos
@@ -335,13 +335,13 @@ Catálogo de Tiempos
 
 # 13. Integración con Gestión de Casos
 
-`Gestión de Casos` deberá utilizar el `Business Catalog Service` para verificar que la categoría final del caso tenga una configuración activa.
+`Gestión de Casos` deberá utilizar el `Catalog Service` para verificar que la categoría final del caso tenga una configuración activa.
 
 ```
 Case.final_category
        │
        ▼
-Business Catalog Service
+Catalog Service
        │
        ▼
 ¿Configuración activa?
@@ -370,12 +370,12 @@ Su responsabilidad termina en verificar que exista una configuración válida qu
 
 # 14. Integración con Estimation Engine
 
-El `Estimation Engine` utilizará el rango proporcionado por el `Business Catalog Service`.
+El `Estimation Engine` utilizará el rango proporcionado por el `Catalog Service`.
 
 ```
 Case.final_category
        ↓
-Business Catalog Service
+Catalog Service
        ↓
 minimum_minutes
 maximum_minutes
@@ -427,9 +427,9 @@ La validación definitiva deberá realizarse fuera del modelo de IA.
 
 ---
 
-# 16. Responsabilidad del Business Catalog Service
+# 16. Responsabilidad del Catalog Service
 
-El `Business Catalog Service` será responsable de:
+El `Catalog Service` será responsable de:
 
 - Cargar el catálogo.
 - Validar su estructura.
@@ -452,7 +452,7 @@ No será responsable de:
 
 # 17. Operaciones Conceptuales
 
-El `Business Catalog Service` deberá proporcionar conceptualmente operaciones como:
+El `Catalog Service` deberá proporcionar conceptualmente operaciones como:
 
 ### Obtener configuración
 
@@ -561,7 +561,7 @@ El procesamiento de casos no podrá modificar el catálogo.
 
 ### RCT-11 — Catálogo centralizado
 
-El catálogo deberá ser consultado exclusivamente mediante el `Business Catalog Service`.
+El catálogo deberá ser consultado exclusivamente mediante el `Catalog Service`.
 
 ### RCT-12 — Categoría no configurada
 
@@ -587,7 +587,7 @@ maximum_minutes
 
 # 19. Validaciones del Catálogo
 
-El `Business Catalog Service` deberá validar como mínimo:
+El `Catalog Service` deberá validar como mínimo:
 
 ### Estructura
 
@@ -624,7 +624,7 @@ Una configuración que no supere estas validaciones no deberá estar disponible 
 Para V1, el catálogo podrá mantenerse como archivo dentro de:
 
 ```
-business_catalogs/
+catalog_service/
 │
 ├── catalogo_estados.xlsx
 ├── catalogo_tiempos.xlsx
@@ -634,7 +634,7 @@ business_catalogs/
 El archivo deberá ser leído únicamente por:
 
 ```
-Business Catalog Service
+Catalog Service
 ```
 
 Los demás módulos no deberán acceder directamente al archivo.
@@ -683,7 +683,7 @@ La diferencia es:
 CATEGORY_NOT_CONFIGURED
 ```
 
-→ error interno/configuración del `Business Catalog Service`.
+→ error interno/configuración del `Catalog Service`.
 
 Mientras:
 
@@ -700,7 +700,7 @@ CATEGORIA_NO_CONFIGURADA
 | Componente | Uso del Catálogo |
 | --- | --- |
 | Gestión de Casos | Verificar que `final_category` esté configurada. |
-| Business Catalog Service | Acceso y validación del catálogo. |
+| Catalog Service | Acceso y validación del catálogo. |
 | Estimation Engine | Obtener el rango autorizado. |
 | AI Service | Recibir el rango como restricción. |
 | Case Context Builder | Incorporar información autorizada al contexto cuando corresponda. |
@@ -724,7 +724,7 @@ catalogo_tiempos.xlsx
 Toda consulta deberá realizarse mediante:
 
 ```
-Business Catalog Service
+Catalog Service
 ```
 
 ### RA-CT-03
@@ -748,7 +748,7 @@ Correcto:
 ```
 Estimation Engine
        ↓
-Business Catalog Service
+Catalog Service
        ↓
 Catálogo de Tiempos
        ↓
@@ -798,7 +798,7 @@ Durante el procesamiento:
 ```
 Case.final_category
         ↓
-Business Catalog Service
+Catalog Service
         ↓
 Configuración de tiempo
         ↓
@@ -851,7 +851,7 @@ Estas funcionalidades no forman parte de V1.
 | --- | --- |
 | **Project Charter** | Define que la estimación debe respetar rangos autorizados. |
 | **Análisis del Proceso de Negocio** | Define el uso de la categoría final y el rango autorizado. |
-| **Mapa de Módulos** | Define el `Business Catalog Service` como punto central de consulta. |
+| **Mapa de Módulos** | Define el `Catalog Service` como punto central de consulta. |
 | **Diseño de Gestión de Casos** | Define que una categoría no configurada no continúa. |
 | **Estimation Engine** | Utiliza el rango para determinar el tiempo. |
 | **AI Service** | Recibe el rango como restricción y no puede modificarlo. |

@@ -70,7 +70,7 @@ BOT-COMProject/
 │
 ├── frontend/
 │
-├── business_catalogs/
+├── catalog_service/
 │
 ├── tests/
 │
@@ -606,7 +606,7 @@ Esto permitirá cambiar posteriormente el proveedor o modelo.
 Los archivos de los catálogos estarán separados del código:
 
 ```
-business_catalogs/
+catalog_service/
 │
 ├── catalogo_estados.xlsx
 ├── catalogo_tiempos.xlsx
@@ -619,7 +619,7 @@ El código no deberá leer estos archivos directamente desde otros módulos.
 El acceso será mediante:
 
 ```
-Business Catalog Service
+Catalog Service
 ```
 
 ---
@@ -1029,7 +1029,7 @@ El acceso deberá ser:
 ```
 Módulo
    ↓
-Business Catalog Service
+Catalog Service
    ↓
 Catálogo
 ```
@@ -1353,7 +1353,7 @@ BOT-COMProject/
 │
 ├── frontend/
 │
-├── business_catalogs/
+├── catalog_service/
 │   ├── catalogo_estados.xlsx
 │   ├── catalogo_tiempos.xlsx
 │   ├── catalogo_responsables.xlsx
@@ -1399,7 +1399,7 @@ La estructura se considerará correctamente implementada cuando:
 - Las capas estén claramente separadas.
 - Los endpoints no contengan lógica de negocio.
 - Los repositorios abstraigan la persistencia.
-- Los catálogos sean accedidos mediante `Business Catalog Service`.
+- Los catálogos sean accedidos mediante `Catalog Service`.
 - Ollama esté encapsulado mediante `AI Service`.
 - Las entidades de dominio no dependan de infraestructura.
 - Existan pruebas separadas por nivel.

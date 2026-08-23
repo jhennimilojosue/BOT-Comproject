@@ -109,21 +109,38 @@ Si la estructura requerida no está presente, el procesamiento deberá detenerse
 
 El Excel Service deberá identificar y extraer, como mínimo, la información necesaria para construir el modelo interno de `Case`.
 
-| Información | Campo conceptual |
-| --- | --- |
-| Código | `case_code` |
-| Usuario | `user` |
-| Responsable | `responsible_name` |
-| Proyecto | `project` |
-| Fecha | `registered_at` |
-| Estado | `status` |
-| Categoría final | `final_category` |
-| Descripción | `description` |
-| Solución | `solution` |
+### 6.1 Mapeo de columnas Excel
 
-El nombre físico de las columnas podrá diferir del nombre utilizado internamente.
+| Nombre Físico Excel | Campo Interno | Obligatorio |
+|---------------------|---------------|-------------|
+| `Codigo Caso` | `case_code` | Sí |
+| `Responsible Name` | `responsible_name` | Sí |
+| `Proyecto` | `project` | Sí |
+| `Fecha` | `registered_at` | Sí |
+| `Estado` | `status` | Sí |
+| `Categoria` | `final_category` | Sí |
+| `Descripcion` | `description` | Sí |
+| `Solucion` | `solution` | Sí |
+| `Usuario` | `user_name` | No |
+
+El nombre físico de las columnas deberá corresponder exactamente con los valores indicados en la tabla.
 
 El Excel Service será responsable de realizar el mapeo correspondiente.
+
+### 6.2 Formato de fecha
+
+El campo `registered_at` podrá venir en los siguientes formatos:
+- `DD/MM/YYYY`
+- `MM/DD/YYYY`
+- `YYYY-MM-DD`
+
+El sistema normalizará a formato ISO 8601: `YYYY-MM-DD`
+
+### 6.3 Duplicados en el mismo archivo
+
+Si se detectan casos con el mismo `case_code` en el mismo archivo:
+- Se procesará únicamente la primera ocurrencia
+- Las ocurrencias duplicadas serán omitidas sin generar error
 
 ---
 
@@ -320,7 +337,7 @@ Conceptualmente:
 ```
 {
   "case_code": "INC001245",
-  "user": "Juan Pérez",
+  "user_name": "Juan Pérez",
   "responsible_name": "Carlos Rodríguez",
   "project": "Hospital Militar",
   "registered_at": "2026-08-10",

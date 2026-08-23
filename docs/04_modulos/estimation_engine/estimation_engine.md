@@ -357,7 +357,7 @@ Aceptar  Rechazar
 
 El resultado rechazado deberá generar información suficiente para identificar el problema.
 
-Ejemplo:
+Ejemplo (formato interno entre módulos):
 
 ```
 {
@@ -365,6 +365,8 @@ Ejemplo:
   "reason": "ESTIMATION_OUT_OF_RANGE"
 }
 ```
+
+> **Nota:** Este es el formato interno utilizado entre módulos. El formato expuesto a través de la API (definido en `contratos_api.md`) utiliza una estructura diferente con `reason_code` y `message` para consumo externo.
 
 > La cantidad máxima de reintentos o la estrategia exacta para regenerar una estimación deberá definirse posteriormente en el diseño del `AI Service` si se decide utilizar reintentos.
 > 

@@ -44,7 +44,7 @@ El catálogo deberá cumplir los siguientes principios:
 - Fuente única de verdad para los responsables disponibles.
 - No duplicar la información en el código fuente.
 - Fácil mantenimiento.
-- Validación mediante `Business Catalog Service`.
+- Validación mediante `Catalog Service`.
 - Separación entre datos del catálogo y lógica de negocio.
 - Posibilidad de evolucionar posteriormente a una fuente de datos persistente.
 
@@ -209,7 +209,7 @@ La V1 no permitirá crear nuevos responsables desde la aplicación.
 
 ### RCR-08 — Catálogo centralizado
 
-La información de los responsables deberá consultarse mediante el `Business Catalog Service`.
+La información de los responsables deberá consultarse mediante el `Catalog Service`.
 
 Los módulos consumidores no podrán acceder directamente al archivo o estructura de persistencia del catálogo.
 
@@ -219,7 +219,7 @@ El procesamiento de casos no podrá modificar la información del Catálogo de R
 
 ---
 
-# 10. Consulta mediante Business Catalog Service
+# 10. Consulta mediante Catalog Service
 
 El acceso al catálogo seguirá el flujo:
 
@@ -227,7 +227,7 @@ El acceso al catálogo seguirá el flujo:
 Case Service
       │
       ▼
-Business Catalog Service
+Catalog Service
       │
       ▼
 Catálogo de Responsables
@@ -236,7 +236,7 @@ Catálogo de Responsables
 Responsables activos
 ```
 
-El `Business Catalog Service` será responsable de:
+El `Catalog Service` será responsable de:
 
 - Leer el catálogo.
 - Validar su estructura.
@@ -298,7 +298,7 @@ El flujo será:
 Responsable seleccionado
           │
           ▼
-Business Catalog Service
+Catalog Service
           │
           ├── ¿Existe?
           │       │
@@ -333,7 +333,7 @@ Frontend
 API
    │
    ▼
-Business Catalog Service
+Catalog Service
    │
    ▼
 Responsables activos
@@ -348,7 +348,7 @@ Esto permitirá modificar los responsables disponibles sin tener que modificar e
 Para V1, el catálogo podrá mantenerse como un archivo dentro de la estructura de catálogos de negocio:
 
 ```
-business_catalogs/
+catalog_service/
 │
 ├── catalogo_estados.xlsx
 ├── catalogo_tiempos.xlsx
@@ -358,7 +358,7 @@ business_catalogs/
 El acceso al archivo deberá realizarse exclusivamente mediante:
 
 ```
-Business Catalog Service
+Catalog Service
 ```
 
 Los módulos del sistema no deberán leer directamente el archivo.
@@ -367,7 +367,7 @@ Los módulos del sistema no deberán leer directamente el archivo.
 
 # 15. Validaciones del Catálogo
 
-Antes de utilizar el catálogo, el `Business Catalog Service` deberá validar como mínimo:
+Antes de utilizar el catálogo, el `Catalog Service` deberá validar como mínimo:
 
 - Existencia del archivo.
 - Estructura esperada.
@@ -388,7 +388,7 @@ Si el catálogo no cumple la estructura requerida, deberá generarse un error de
 | --- | --- |
 | **Project Charter** | Define que V1 tendrá cinco responsables configurados. |
 | **Análisis del Proceso de Negocio** | Define la selección del responsable antes del procesamiento. |
-| **Mapa de Módulos** | Define el uso del Business Catalog Service. |
+| **Mapa de Módulos** | Define el uso del Catalog Service. |
 | **Diseño de Gestión de Casos** | Define el filtrado mediante `Responsible Name`. |
 | **Case Contract** | Define la estructura del responsable dentro del caso. |
 | **Catálogo de Estados** | Define los estados procesables. |
@@ -435,7 +435,7 @@ V1
 
 Case Service
      ↓
-Business Catalog Service
+Catalog Service
      ↓
 Excel
 ```
@@ -445,7 +445,7 @@ Futuro
 
 Case Service
      ↓
-Business Catalog Service
+Catalog Service
      ↓
 PostgreSQL
 ```

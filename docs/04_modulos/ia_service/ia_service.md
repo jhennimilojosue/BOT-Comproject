@@ -493,21 +493,23 @@ Los parámetros de Ollama deberán ser configurables.
 
 Como mínimo se deberá contemplar configuración para:
 
-```
-Modelo
-Temperature
-Timeout
-```
+| Parámetro | Tipo | Valor por Defecto | Descripción |
+|-----------|------|-------------------|-------------|
+| `AI_MODEL` | String | `qwen2.5:latest` | Modelo a utilizar |
+| `AI_TEMPERATURE` | Float | `0.3` | Temperatura del modelo |
+| `AI_TIMEOUT` | Integer | `60` | Timeout en segundos |
+| `AI_MAX_TOKENS` | Integer | `500` | Máximo de tokens en respuesta |
 
 Ejemplo conceptual:
 
 ```
-AI_MODEL=qwen2.5-coder:latest
-AI_TEMPERATURE=...
-AI_TIMEOUT=...
+AI_MODEL=qwen2.5:latest
+AI_TEMPERATURE=0.3
+AI_TIMEOUT=60
+AI_MAX_TOKENS=500
 ```
 
-Los valores concretos deberán establecerse durante las pruebas del modelo.
+Los valores concretos podrán ajustarse durante las pruebas del modelo.
 
 ---
 

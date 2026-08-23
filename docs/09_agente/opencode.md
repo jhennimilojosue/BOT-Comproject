@@ -70,7 +70,7 @@ Estas reglas no son reglas de negocio de BOT-COMProject.
 
 Son reglas de comportamiento para OpenCode respecto al uso de la documentación.
 
-3.3.1 Lectura inicial del proyecto
+3.1.1 Lectura inicial del proyecto
 
 Antes de realizar la primera implementación del proyecto, OpenCode deberá realizar una revisión inicial de la documentación disponible en /docs.
 
@@ -166,7 +166,7 @@ Estados	catalogo_estados.md
 Responsables	catalogo_responsables.md
 Tiempos y rangos	catalogo_tiempos.md
 Estructura de casos	case_contract.md
-Persistencia	modelo_datos.md
+Persistencia	modelo_datos_modulo.md
 API	contratos_api.md
 Comportamiento de OpenCode	opencode.md
 
@@ -478,55 +478,55 @@ La implementación del cambio requerirá autorización.
 
 La documentación se encuentra organizada de la siguiente manera:
 
-Bot-comproject/
-      │
-      |
-      ├──readme.md
-      |
-      ├──docs/
-         │
-         │
-         ├── 01_contexto/
-         ├── 01_project_charter.md
-         │   ├── 02_glosario.md
-         │   └── 03_analisis_proceso_negocio.md
-         │
-         ├── 02_arquitectura/
-         │   ├── 01_mapa_modulos.md
-         │   └── 02_arquitectura_sistema.md
-         │
-         ├── 03_desarrollo/
-         │   └── 01_estructura_y_convenciones.md
-         │
-         ├── 04_modulos/
-         │   ├── estimation_engine/
-         │   │   └── estimation_engine.md
-         │   │
-         │   ├── gestion_casos/
-         │   │   └── gestion_casos.md
-         │   │
-         │   ├── ia_service/
-         │   │   └── ia_service.md
-         │   │
-         │   └── procesamiento_maestro/
-         │       └── procesamiento_maestro.md
-         │
-         ├── 05_catalogos/
-         │   ├── catalogo_estados.md
-         │   ├── catalogo_responsables.md
-         │   └── catalogo_tiempos.md
-         │
-         ├── 06_contratos/
-         │   └── case_contract.md
-         │
-         ├── 07_persistencia/
-         │   └── modelo_datos.md
-         │
-         ├── 08_api/
-         │   └── contratos_api.md
-         │
-         └── 09_agente/
-         └── opencode.md
+BOT-COMProject/
+│
+├── README.md
+│
+├── docs/
+│   │
+│   ├── 01_contexto/
+│   │   ├── 01_project_charter.md
+│   │   ├── 02_glosario.md
+│   │   └── 03_arquitectura_modulos.md
+│   │
+│   ├── 02_arquitectura/
+│   │   ├── 01_mapa_modulos.md
+│   │   └── 02_arquitectura_sistema.md
+│   │
+│   ├── 03_desarrollo/
+│   │   └── 01_estructura_y_convenciones.md
+│   │
+│   ├── 04_modulos/
+│   │   │
+│   │   ├── estimation_engine/
+│   │   │   └── estimation_engine.md
+│   │   │
+│   │   ├── gestion_casos/
+│   │   │   ├── gestion_casos.md
+│   │   │   └── modelo_datos_modulo.md
+│   │   │
+│   │   ├── ia_service/
+│   │   │   └── ia_service.md
+│   │   │
+│   │   └── procesamiento_maestro/
+│   │       └── procesamiento_maestro.md
+│   │
+│   ├── 05_catalogos/
+│   │   ├── catalogo_estados.md
+│   │   ├── catalogo_responsables.md
+│   │   └── catalogo_tiempos.md
+│   │
+│   ├── 06_contratos/
+│   │   └── case_contract.md
+│   │
+│   ├── 08_api/
+│   │   └── contratos_api.md
+│   │
+│   └── 09_agente/
+│       ├── opencode.md
+│       └── prompt_maestro.md
+│
+└── [código fuente futuro]
 
 5. Fuente de verdad por área
 
@@ -535,19 +535,19 @@ OpenCode deberá utilizar la siguiente matriz para determinar qué documento con
 Área	Fuente de verdad
 Propósito del proyecto	01_contexto/01_project_charter.md
 Terminología	01_contexto/02_glosario.md
-Reglas del proceso	01_contexto/03_analisis_proceso_negocio.md
+Arquitectura de módulos	01_contexto/03_arquitectura_modulos.md
 Módulos del sistema	02_arquitectura/01_mapa_modulos.md
 Arquitectura	02_arquitectura/02_arquitectura_sistema.md
 Código y convenciones	03_desarrollo/01_estructura_y_convenciones.md
 Gestión de Casos	04_modulos/gestion_casos/gestion_casos.md
+Modelo de Datos	04_modulos/gestion_casos/modelo_datos_modulo.md
 Estimation Engine	04_modulos/estimation_engine/estimation_engine.md
 IA	04_modulos/ia_service/ia_service.md
 Procesamiento del Maestro	04_modulos/procesamiento_maestro/procesamiento_maestro.md
 Estados	05_catalogos/catalogo_estados.md
 Responsables	05_catalogos/catalogo_responsables.md
 Tiempos	05_catalogos/catalogo_tiempos.md
-Estructura de Case	06_contratos/case_contract.md
-Persistencia	07_persistencia/modelo_datos.md
+Case Contract	06_contratos/case_contract.md
 API	08_api/contratos_api.md
 Reglas de comportamiento de OpenCode	09_agente/opencode.md
 6. Regla de lectura documental

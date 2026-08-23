@@ -177,7 +177,7 @@ GET /api/v1/responsibles
 
 Obtener los responsables disponibles para la V1.
 
-La información deberá ser proporcionada mediante el `Business Catalog Service`.
+La información deberá ser proporcionada mediante el `Catalog Service`.
 
 El frontend no deberá conocer directamente dónde se almacenan los responsables.
 
@@ -271,6 +271,23 @@ file = ASDK_Full_Caso.xlsx
 ```
 
 El `id` retornado corresponde al `upload_id` utilizado posteriormente para iniciar el procesamiento.
+
+### 8.1 Límites
+
+| Parámetro | Valor | Descripción |
+|-----------|-------|-------------|
+| `MAX_FILE_SIZE` | 50 MB | Tamaño máximo del archivo |
+| `ALLOWED_EXTENSIONS` | `.xlsx` | Extensiones permitidas |
+
+Si el archivo excede el tamaño máximo, el sistema retornará:
+
+```
+HTTP 413
+{
+  "error": "FILE_TOO_LARGE",
+  "message": "El archivo excede el tamaño máximo permitido (50 MB)"
+}
+```
 
 ---
 
@@ -436,6 +453,22 @@ o:
 
 ```
 GET /processing/{processing_id}/rejected
+```
+
+### 9.1 Comportamiento
+
+El endpoint `POST /cases/process` funcionará de manera **síncrona**.
+
+El tiempo máximo de respuesta será de **5 minutos** (300 segundos).
+
+Si el procesamiento excede este tiempo, el sistema retornará:
+
+```
+HTTP 504
+{
+  "error": "PROCESSING_TIMEOUT",
+  "message": "El procesamiento excedió el tiempo máximo permitido"
+}
 ```
 
 ---
@@ -607,14 +640,14 @@ Los códigos deberán ser estandarizados.
 Inicialmente:
 
 ```
-DATOS_INCOMPLETOS
-RESPONSABLE_NO_SELECCIONADO
-RESPONSABLE_NO_VALIDO
-ESTADO_NO_PROCESABLE
-CATEGORIA_NO_CONFIGURADA
-RANGO_NO_CONFIGURADO
-DUPLICADO
-RESULTADO_INVALIDO
+INCOMPLETE_DATA
+RESPONSIBLE_NOT_SELECTED
+RESPONSIBLE_INVALID
+STATUS_NOT_PROCESSABLE
+CATEGORY_NOT_CONFIGURED
+TIME_RANGE_NOT_CONFIGURED
+DUPLICATE
+INVALID_RESULT
 ```
 
 La lista deberá mantenerse alineada con:
@@ -651,6 +684,13 @@ page
 page_size
 ```
 
+### 20.1 Paginación
+
+| Parámetro | Tipo | Obligatorio | Valor por Defecto | Descripción |
+|-----------|------|-------------|-------------------|-------------|
+| `page` | Integer | No | `1` | Número de página |
+| `page_size` | Integer | No | `20` | Registros por página |
+
 `status` representa exclusivamente el **estado original proveniente de Aranda**.
 
 Ejemplo:
@@ -670,10 +710,13 @@ GET /api/v1/cases?upload_id=...&responsible_id=...&status=Solucionado
       "id": "850e8400-e29b-41d4-a716-446655440003",
       "case_code": "INC001245",
       "responsible_name": "Carlos Rodríguez",
+      "user_name": "Juan Pérez",
       "project": "Hospital Militar",
       "status": "Solucionado",
       "final_category": "Ingreso de Huella",
-      "registered_at": "2026-08-14T10:30:00"
+      "registered_at": "2026-08-14",
+      "description": "Problema con el registro de huella.",
+      "solution": "Se realizó la configuración correspondiente."
     }
   ],
   "pagination": {
@@ -813,7 +856,7 @@ El backend será responsable de:
 - Crear y controlar ejecuciones de procesamiento.
 - Orquestar servicios.
 - Consultar repositorios.
-- Consultar catálogos mediante `Business Catalog Service`.
+- Consultar catálogos mediante `Catalog Service`.
 - Ejecutar `Estimation Engine`.
 - Ejecutar `AI Service`.
 - Persistir resultados.
@@ -875,7 +918,7 @@ POST /api/v1/cases/process
 
 ### API-06
 
-Los catálogos deberán consultarse mediante `Business Catalog Service`.
+Los catálogos deberán consultarse mediante `Catalog Service`.
 
 ### API-07
 
