@@ -27,14 +27,15 @@ class StructureValidator:
     """
 
     # Columnas requeridas según el Case Contract
+    # Adaptado a la estructura real del Maestro de Casos de Aranda
     REQUIRED_COLUMNS = {
-        "Codigo Caso",
-        "Responsible Name",
-        "Proyecto",
-        "Fecha",
+        "Cod Caso",
+        "Tipo Caso",
+        "Responsable",
+        "Fecha de Registro",
         "Estado",
         "Categoria",
-        "Descripcion",
+        "Descripci\u00f3n",
         "Solucion",
     }
 
@@ -42,6 +43,37 @@ class StructureValidator:
     OPTIONAL_COLUMNS = {
         "Usuario",
     }
+
+    # Mapa de normalización para caracteres especiales corrupted
+    CHARACTER_NORMALIZATION = {
+        "\xf3": "ó",  # Latin-1 ó
+        "\xf1": "ñ",  # Latin-1 ñ
+        "\xed": "í",  # Latin-1 í
+        "\xe1": "á",  # Latin-1 á
+        "\xe9": "é",  # Latin-1 é
+        "\xfa": "ú",  # Latin-1 ú
+        "�": "ó",  # Corrupted ó
+        "�": "á",  # Corrupted á
+        "�": "é",  # Corrupted é
+        "�": "í",  # Corrupted í
+        "�": "ú",  # Corrupted ú
+        "�": "ñ",  # Corrupted ñ
+    }
+
+    def _normalize_column_name(self, name: str) -> str:
+        """
+        Normaliza un nombre de columna para manejar caracteres corrupted.
+
+        Args:
+            name: Nombre de columna original
+
+        Returns:
+            Nombre normalizado
+        """
+        normalized = name.strip()
+        for corrupted, correct in self.CHARACTER_NORMALIZATION.items():
+            normalized = normalized.replace(corrupted, correct)
+        return normalized
 
     def validate(self, df: pd.DataFrame) -> bool:
         """
@@ -76,7 +108,9 @@ class StructureValidator:
         Returns:
             Conjunto de columnas faltantes
         """
-        df_columns = set(df.columns)
+        df_columns = set(
+            self._normalize_column_name(str(col)) for col in df.columns
+        )
         return self.REQUIRED_COLUMNS - df_columns
 
     def get_required_columns(self) -> List[str]:

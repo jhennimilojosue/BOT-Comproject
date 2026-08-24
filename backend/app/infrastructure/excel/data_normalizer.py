@@ -26,8 +26,14 @@ class DataNormalizer:
 
     # Formatos de fecha soportados según procesamiento_maestro.md sección 6.2
     DATE_FORMATS = [
+        "%Y-%m-%d %H:%M:%S.%f",  # YYYY-MM-DD HH:MM:SS.mmmmmm (con milisegundos)
+        "%Y-%m-%d %H:%M:%S",  # YYYY-MM-DD HH:MM:SS (con tiempo)
         "%Y-%m-%d",  # YYYY-MM-DD (ISO 8601)
+        "%d/%m/%Y %H:%M:%S.%f",  # DD/MM/YYYY HH:MM:SS.mmmmmm
+        "%d/%m/%Y %H:%M:%S",  # DD/MM/YYYY HH:MM:SS
         "%d/%m/%Y",  # DD/MM/YYYY
+        "%m/%d/%Y %H:%M:%S.%f",  # MM/DD/YYYY HH:MM:SS.mmmmmm
+        "%m/%d/%Y %H:%M:%S",  # MM/DD/YYYY HH:MM:SS
         "%m/%d/%Y",  # MM/DD/YYYY
     ]
 

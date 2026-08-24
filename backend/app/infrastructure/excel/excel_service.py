@@ -125,4 +125,26 @@ class ExcelService:
         """
         content = file.file.read()
         file.file.seek(0)
-        return pd.read_excel(io.BytesIO(content), header=None, dtype=str)
+
+        # Obtener nombres de hojas
+        excel_file = pd.ExcelFile(io.BytesIO(content))
+        sheet_names = excel_file.sheet_names
+
+        # Buscar la hoja con datos (la primera que no esté vacía)
+        for sheet_name in sheet_names:
+            df = pd.read_excel(
+                io.BytesIO(content),
+                sheet_name=sheet_name,
+                header=None,
+                dtype=str,
+            )
+            if not df.empty:
+                return df
+
+        # Si todas las hojas están vacías, retornar la primera
+        return pd.read_excel(
+            io.BytesIO(content),
+            sheet_name=0,
+            header=None,
+            dtype=str,
+        )

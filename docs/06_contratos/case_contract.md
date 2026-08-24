@@ -1,6 +1,6 @@
 **Proyecto:** BOT-COMProject
 
-**Versión:** 1.2
+**Versión:** 1.3
 
 **Estado:** Definido
 
@@ -125,6 +125,7 @@ El objeto lógico de `Case` será:
   "id": "UUID",
   "upload_id": "UUID",
   "case_code": "INC001245",
+  "case_type": "Incidente",
   "responsible_name": "Carlos Rodríguez",
   "responsible_id": "UUID",
   "user_name": "Juan Pérez",
@@ -150,6 +151,7 @@ El objeto lógico de `Case` será:
 | `id` | UUID | 36 | Sí | Sistema | Identificador interno |
 | `upload_id` | UUID | 36 | Sí | Sistema | Upload del cual proviene |
 | `case_code` | String | 50 | Sí | Excel | Código original del caso |
+| `case_type` | Enum | - | Sí | Excel | Tipo de caso (Incidente/Requerimiento) |
 | `responsible_name` | String | 200 | Sí | Excel | Responsable original de Aranda |
 | `responsible_id` | UUID | 36 | No | Sistema | Referencia al catálogo de responsables |
 | `user_name` | String | 200 | No | Excel | Usuario asociado |
@@ -168,6 +170,43 @@ Todos los campos DateTime deberán almacenarse en formato ISO 8601:
 - `created_at`: Fecha y hora → `YYYY-MM-DDTHH:MM:SS`
 
 **Zona horaria:** UTC para todos los campos de tipo DateTime.
+
+### 5.2 Tipo de Caso
+
+El campo `case_type` representa el tipo de caso proveniente de Aranda.
+
+Valores permitidos:
+
+```
+Incidente
+Requerimiento
+```
+
+Este campo es utilizado para:
+- Determinar en qué catálogo de tiempos buscar la configuración
+- Distinguir categorías diferentes según el tipo de caso
+- Mantener la trazabilidad del origen del caso
+
+Ejemplo:
+
+```
+case_type: "Incidente"
+```
+
+o:
+
+```
+case_type: "Requerimiento"
+```
+
+Una categoría puede tener configuraciones diferentes según el tipo de caso:
+
+```
+| case_type    | category           | min_minutes | max_minutes |
+|-------------|--------------------|-------------|-------------|
+| Incidente   | Configurar red     | 30          | 60          |
+| Requerimiento | Configurar red   | 45          | 90          |
+```
 
 ---
 
@@ -918,6 +957,12 @@ Todo `Case` deberá contener `final_category`.
 
 Todo `Case` deberá contener `registered_at`.
 
+### CC-08.1 — Tipo de caso obligatorio
+
+Todo `Case` deberá contener `case_type` con valor válido (`Incidente` o `Requerimiento`).
+
+El tipo de caso se utiliza para determinar en qué catálogo de tiempos buscar la configuración de la categoría.
+
 ### CC-09 — Responsable de catálogo
 
 `responsible_id` representa una referencia interna y no reemplaza `responsible_name`.
@@ -1146,6 +1191,12 @@ Un mismo `Case` puede participar en múltiples `Processing`.
 
 `final_category` representa únicamente la categoría final proveniente de Aranda.
 
+### CCC-08.1 — Tipo de caso
+
+El campo `case_type` indica si el caso es un `Incidente` o un `Requerimiento`.
+
+Este campo se utiliza para determinar en qué catálogo de tiempos buscar la configuración de la categoría, ya que incidentes y requerimientos pueden tener rangos de tiempo diferentes para la misma categoría.
+
 ### CCC-09 — Preservación
 
 Los datos originales no podrán ser sobrescritos por la IA.
@@ -1172,4 +1223,5 @@ AIResult / Estimation / ProcessingRejection
 | --- | --- | --- |
 | 1.0 | En construcción | Contrato inicial |
 | 1.1 | Definido | Incorporación de validaciones, normalización y contexto |
-| **1.2** | **Definido** | Alineación con Modelo de Datos 1.2, separación `Case/Processing`, `Case.id` vs `case_code`, `upload_id`, `responsible_id`, separación de resultados IA/estimación y actualización de campos obligatorios/opcionales |
+| 1.2 | Definido | Alineación con Modelo de Datos 1.2, separación `Case/Processing`, `Case.id` vs `case_code`, `upload_id`, `responsible_id`, separación de resultados IA/estimación y actualización de campos obligatorios/opcionales |
+| **1.3** | **Definido** | Incorporación de `case_type` (Incidente/Requerimiento) para discriminación de catálogos de tiempos |

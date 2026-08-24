@@ -1,6 +1,6 @@
 **Proyecto:** BOT-COMProject
 
-**Versión:** 1.0
+**Versión:** 1.1
 
 **Estado:** Definido
 
@@ -114,6 +114,7 @@ El Excel Service deberá identificar y extraer, como mínimo, la información ne
 | Nombre Físico Excel | Campo Interno | Obligatorio |
 |---------------------|---------------|-------------|
 | `Codigo Caso` | `case_code` | Sí |
+| `Tipo Caso` | `case_type` | Sí |
 | `Responsible Name` | `responsible_name` | Sí |
 | `Proyecto` | `project` | Sí |
 | `Fecha` | `registered_at` | Sí |
@@ -126,6 +127,19 @@ El Excel Service deberá identificar y extraer, como mínimo, la información ne
 El nombre físico de las columnas deberá corresponder exactamente con los valores indicados en la tabla.
 
 El Excel Service será responsable de realizar el mapeo correspondiente.
+
+### 6.1.1 Valores de Tipo Caso
+
+El campo `case_type` admitirá únicamente los siguientes valores:
+
+```
+Incidente
+Requerimiento
+```
+
+Si el valor no coincide con uno de los permitidos, el caso deberá ser rechazado con el código `INVALID_CASE_TYPE`.
+
+Este campo se utiliza para determinar en qué catálogo de tiempos buscar la configuración de la categoría.
 
 ### 6.2 Formato de fecha
 
@@ -800,3 +814,12 @@ La definición oficial del Excel Service para V1 es:
 
 > **Excel Service es el componente encargado de recibir el Maestro de Casos de Aranda, validar su estructura, extraer la información requerida, normalizarla técnicamente y transformarla al contrato interno de `Case`, entregando los datos a Gestión de Casos sin aplicar reglas de negocio de procesabilidad, estimación o inteligencia artificial.**
 >
+
+---
+
+# 30. Control de Versión
+
+| Versión | Estado | Cambios principales |
+| --- | --- | --- |
+| 1.0 | Definido | Contrato inicial del Excel Service |
+| **1.1** | **Definido** | Incorporación de columna `Tipo Caso` (`case_type`) para discriminación de incidentes y requerimientos |

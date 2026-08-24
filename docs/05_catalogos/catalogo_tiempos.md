@@ -1,6 +1,6 @@
 **Proyecto:** BOT-COMProject
 
-**Versión:** 1.1
+**Versión:** 1.2
 
 **Estado:** Definido
 
@@ -18,6 +18,7 @@ Su función es proporcionar una fuente única y centralizada para determinar:
 - Cuál es el tiempo mínimo permitido para cada categoría.
 - Cuál es el tiempo máximo permitido.
 - Si una configuración se encuentra activa.
+- Si la configuración es para incidentes, requerimientos o ambos.
 - Información adicional relacionada con la configuración.
 
 El catálogo será utilizado por el `Catalog Service` y consultado por los componentes que requieran información sobre los rangos autorizados.
@@ -32,6 +33,7 @@ El catálogo será utilizado por el `Catalog Service` y consultado por los compo
 En la V1:
 
 - Cada `final_category` podrá tener una configuración de tiempo.
+- Cada configuración podrá diferenciarse por `case_type` (Incidente/Requerimiento).
 - Cada configuración tendrá un mínimo y un máximo.
 - Solo las configuraciones activas podrán utilizarse durante el procesamiento.
 - La categoría utilizada será exclusivamente la **categoría final registrada en el Maestro de Casos**.
@@ -85,21 +87,55 @@ Esta será la única categoría utilizada para consultar el Catálogo de Tiempos
 
 ---
 
-## 4.2 Configuración de Tiempo
+## 4.2 Tipo de Caso
+
+El tipo de caso indica si el caso es un Incidente o un Requerimiento.
+
+Se representa en el sistema mediante:
+
+```
+Case.case_type
+```
+
+Valores permitidos:
+
+```
+Incidente
+Requerimiento
+```
+
+Este campo se utiliza para diferenciar las configuraciones de tiempo según el tipo de caso.
+
+Ejemplo:
+
+```
+| case_type    | category           | min_minutes | max_minutes |
+|-------------|--------------------|-------------|-------------|
+| Incidente   | Configurar red     | 30          | 40          |
+| Requerimiento | Configurar red   | 45          | 60          |
+```
+
+---
+
+## 4.3 Configuración de Tiempo
 
 Una configuración de tiempo es aquella que:
 
 1. Tiene una categoría final.
-2. Tiene un tiempo mínimo.
-3. Tiene un tiempo máximo.
-4. Se encuentra activa.
-5. Tiene un rango válido.
+2. Tiene un tipo de caso (Incidente/Requerimiento).
+3. Tiene un tiempo mínimo.
+4. Tiene un tiempo máximo.
+5. Se encuentra activa.
+6. Tiene un rango válido.
 
 Ejemplo:
 
 ```
 Categoría:
 Configurar punto de red Usuarios y/o proyectos
+
+Tipo de Caso:
+Incidente
 
 Mínimo:
 30 minutos
@@ -113,24 +149,24 @@ Sí
 
 ---
 
-## 4.3 Categoría No Configurada
+## 4.4 Categoría No Configurada
 
 Una categoría será considerada no configurada cuando:
 
-- No exista en el catálogo.
+- No exista en el catálogo para el tipo de caso.
 - Exista pero esté inactiva.
 - Su configuración no tenga un rango válido.
 
 Flujo:
 
 ```
-Case.final_category
+Case.final_category + Case.case_type
         ↓
 Catalog Service
         ↓
 Catálogo de Tiempos
         ↓
-No existe configuración activa
+No existe configuración activa para el tipo de caso
         ↓
 CATEGORIA_NO_CONFIGURADA
 ```
@@ -146,6 +182,7 @@ La estructura propuesta para V1 será:
 | Campo | Tipo | Obligatorio | Descripción |
 | --- | --- | --- | --- |
 | `id` | Integer | Sí | Identificador de la configuración. |
+| `case_type` | String | Sí | Tipo de caso (Incidente/Requerimiento). |
 | `final_category` | String | Sí | Categoría final del caso. |
 | `minimum_minutes` | Integer | Sí | Tiempo mínimo permitido en minutos. |
 | `maximum_minutes` | Integer | Sí | Tiempo máximo permitido en minutos. |
@@ -158,17 +195,30 @@ Los nombres anteriores representan la estructura lógica del catálogo.
 
 La fuente física utilizada en V1 podrá mantener los nombres definidos para el archivo de negocio, siempre que el `Catalog Service` realice la transformación correspondiente.
 
+### 5.1 Unicidad
+
+La unicidad en el catálogo se determinará mediante:
+
+```
+case_type + final_category
+```
+
+Esto significa que una categoría puede tener configuraciones diferentes según el tipo de caso.
+
 ---
 
 # 6. Catálogo Inicial V1
 
 Las categorías conocidas actualmente y sus rangos son:
 
-| ID | Categoría final | Mínimo | Máximo | Activo |
-| --- | --- | --- | --- | --- |
-| 1 | Cableado puntos de red en sedes Comware o proyectos clientes | 30 | 60 | Sí |
-| 2 | Configurar punto de red Usuarios y/o proyectos | 30 | 40 | Sí |
-| 3 | Configurar segmento de red en los enlaces de comunicaciones | 60 | 90 | Sí |
+| ID | Tipo Caso | Categoría final | Mínimo | Máximo | Activo |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Incidente | Cableado puntos de red en sedes Comware o proyectos clientes | 30 | 60 | Sí |
+| 2 | Incidente | Configurar punto de red Usuarios y/o proyectos | 30 | 40 | Sí |
+| 3 | Incidente | Configurar segmento de red en los enlaces de comunicaciones | 60 | 90 | Sí |
+| 4 | Requerimiento | Cableado puntos de red en sedes Comware o proyectos clientes | 45 | 90 | Sí |
+| 5 | Requerimiento | Configurar punto de red Usuarios y/o proyectos | 45 | 60 | Sí |
+| 6 | Requerimiento | Configurar segmento de red en los enlaces de comunicaciones | 90 | 120 | Sí |
 
 Los valores están expresados en **minutos**.
 
@@ -893,5 +943,15 @@ Resultado de IA
 
 La definición oficial del Catálogo de Tiempos de BOT-COMProject V1 es:
 
-> **El Catálogo de Tiempos de BOT-COMProject V1 contiene las categorías finales configuradas y sus respectivos rangos mínimo y máximo de tiempo. Estos rangos representan las restricciones oficiales que deberá respetar el Estimation Engine. Gestión de Casos únicamente verifica que la categoría final posea una configuración activa. La IA podrá recomendar un tiempo dentro del rango, pero no podrá modificar, crear ni ampliar las reglas definidas en el catálogo.**
+> **El Catálogo de Tiempos de BOT-COMProject V1 contiene las categorías finales configuradas, diferenciadas por tipo de caso (Incidente/Requerimiento), y sus respectivos rangos mínimo y máximo de tiempo. Estos rangos representan las restricciones oficiales que deberá respetar el Estimation Engine. Gestión de Casos únicamente verifica que la categoría final posea una configuración activa para el tipo de caso correspondiente. La IA podrá recomendar un tiempo dentro del rango, pero no podrá modificar, crear ni ampliar las reglas definidas en el catálogo.**
 >
+
+---
+
+# 31. Control de Versión
+
+| Versión | Estado | Cambios principales |
+| --- | --- | --- |
+| 1.0 | En construcción | Definición inicial |
+| 1.1 | Definido | Incorporación de estructura y reglas |
+| **1.2** | **Definido** | Incorporación de `case_type` (Incidente/Requerimiento) para discriminación de configuraciones de tiempo |

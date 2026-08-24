@@ -27,18 +27,50 @@ class HeaderResolver:
     """
 
     # Columnas requeridas según el Case Contract
+    # Adaptado a la estructura real del Maestro de Casos de Aranda
     REQUIRED_COLUMNS = {
-        "Codigo Caso",
-        "Responsible Name",
-        "Proyecto",
-        "Fecha",
+        "Cod Caso",
+        "Tipo Caso",
+        "Responsable",
+        "Fecha de Registro",
         "Estado",
         "Categoria",
-        "Descripcion",
+        "Descripci\u00f3n",
         "Solucion",
     }
 
     DEFAULT_HEADER_SEARCH_LIMIT = 10
+
+    # Mapa de normalización para caracteres especiales corrupted
+    CHARACTER_NORMALIZATION = {
+        "\xf3": "ó",  # Latin-1 ó
+        "\xf1": "ñ",  # Latin-1 ñ
+        "\xed": "í",  # Latin-1 í
+        "\xe1": "á",  # Latin-1 á
+        "\xe9": "é",  # Latin-1 é
+        "\xfa": "ú",  # Latin-1 ú
+        "�": "ó",  # Corrupted ó
+        "�": "á",  # Corrupted á
+        "�": "é",  # Corrupted é
+        "�": "í",  # Corrupted í
+        "�": "ú",  # Corrupted ú
+        "�": "ñ",  # Corrupted ñ
+    }
+
+    def _normalize_column_name(self, name: str) -> str:
+        """
+        Normaliza un nombre de columna para manejar caracteres corrupted.
+
+        Args:
+            name: Nombre de columna original
+
+        Returns:
+            Nombre normalizado
+        """
+        normalized = name.strip()
+        for corrupted, correct in self.CHARACTER_NORMALIZATION.items():
+            normalized = normalized.replace(corrupted, correct)
+        return normalized
 
     def resolve(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -90,7 +122,8 @@ class HeaderResolver:
 
         for index in range(search_limit):
             row_values = set(
-                df.iloc[index].dropna().astype(str).str.strip()
+                self._normalize_column_name(str(val))
+                for val in df.iloc[index].dropna().astype(str)
             )
             matches = len(row_values & self.REQUIRED_COLUMNS)
 
@@ -119,7 +152,8 @@ class HeaderResolver:
         """
         new_df = df.iloc[header_row_index + 1:].reset_index(drop=True)
         new_df.columns = [
-            str(col).strip() for col in df.iloc[header_row_index]
+            self._normalize_column_name(str(col))
+            for col in df.iloc[header_row_index]
         ]
         return new_df
 

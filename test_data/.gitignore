@@ -1,0 +1,6 @@
+# Ignore Excel files
+*.xlsx
+*.xls
+
+# Keep this folder
+!.gitkeep

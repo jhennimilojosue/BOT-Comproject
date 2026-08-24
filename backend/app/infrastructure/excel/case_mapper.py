@@ -23,18 +23,18 @@ class ExcelCaseDTO(BaseModel):
     """
 
     case_code: str = Field(..., min_length=1, max_length=50)
+    case_type: Optional[str] = Field(default=None, max_length=50)
     responsible_name: str = Field(..., min_length=1, max_length=200)
     user_name: Optional[str] = Field(default=None, max_length=200)
-    project: str = Field(..., min_length=1, max_length=200)
+    project: Optional[str] = Field(default=None, max_length=200)
     registered_at: str = Field(
         ...,
         description="Fecha de registro en formato ISO 8601: YYYY-MM-DD",
-        pattern=r"^\d{4}-\d{2}-\d{2}$",
     )
     status: str = Field(..., min_length=1, max_length=100)
     final_category: str = Field(..., min_length=1, max_length=200)
-    description: str = Field(..., min_length=1)
-    solution: str = Field(..., min_length=1)
+    description: Optional[str] = Field(default=None)
+    solution: Optional[str] = Field(default=None)
 
 
 class CaseMapper:

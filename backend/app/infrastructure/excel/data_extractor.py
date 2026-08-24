@@ -26,6 +26,7 @@ class DataExtractor:
 
     INTERNAL_FIELDS = [
         "case_code",
+        "case_type",
         "responsible_name",
         "user_name",
         "project",

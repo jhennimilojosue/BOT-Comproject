@@ -32,3 +32,6 @@ ruff>=0.1.0
 
 # Environment Variables
 python-dotenv>=1.0.0
+
+# Form data
+python-multipart>=0.0.6

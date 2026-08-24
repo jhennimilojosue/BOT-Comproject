@@ -25,28 +25,60 @@ class ColumnMapper:
     """
 
     # Mapeo oficial según procesamiento_maestro.md sección 6.1
+    # Adaptado a la estructura real del Maestro de Casos de Aranda
     COLUMN_MAPPING: Dict[str, str] = {
-        "Codigo Caso": "case_code",
-        "Responsible Name": "responsible_name",
-        "Proyecto": "project",
-        "Fecha": "registered_at",
+        "Cod Caso": "case_code",
+        "Tipo Caso": "case_type",
+        "Responsable": "responsible_name",
+        "Fecha de Registro": "registered_at",
         "Estado": "status",
         "Categoria": "final_category",
-        "Descripcion": "description",
+        "Descripci\u00f3n": "description",
         "Solucion": "solution",
         "Usuario": "user_name",
     }
 
     REQUIRED_FIELDS = {
         "case_code",
+        "case_type",
         "responsible_name",
-        "project",
         "registered_at",
         "status",
         "final_category",
         "description",
         "solution",
     }
+
+    # Mapa de normalización para caracteres especiales corrupted
+    CHARACTER_NORMALIZATION = {
+        "\xf3": "ó",  # Latin-1 ó
+        "\xf1": "ñ",  # Latin-1 ñ
+        "\xed": "í",  # Latin-1 í
+        "\xe1": "á",  # Latin-1 á
+        "\xe9": "é",  # Latin-1 é
+        "\xfa": "ú",  # Latin-1 ú
+        "�": "ó",  # Corrupted ó
+        "�": "á",  # Corrupted á
+        "�": "é",  # Corrupted é
+        "�": "í",  # Corrupted í
+        "�": "ú",  # Corrupted ú
+        "�": "ñ",  # Corrupted ñ
+    }
+
+    def _normalize_column_name(self, name: str) -> str:
+        """
+        Normaliza un nombre de columna para manejar caracteres corrupted.
+
+        Args:
+            name: Nombre de columna original
+
+        Returns:
+            Nombre normalizado
+        """
+        normalized = name.strip()
+        for corrupted, correct in self.CHARACTER_NORMALIZATION.items():
+            normalized = normalized.replace(corrupted, correct)
+        return normalized
 
     def get_mapping(self, df: pd.DataFrame) -> Dict[str, str]:
         """
@@ -59,7 +91,9 @@ class ColumnMapper:
             Diccionario {columna_física: campo_interno} solo con
             las columnas presentes en el DataFrame
         """
-        df_columns = set(df.columns)
+        df_columns = set(
+            self._normalize_column_name(str(col)) for col in df.columns
+        )
         return {
             excel_col: internal_field
             for excel_col, internal_field in self.COLUMN_MAPPING.items()
@@ -79,7 +113,13 @@ class ColumnMapper:
         Raises:
             ValueError: Si falta alguna columna obligatoria para el mapeo
         """
-        mapping = self.get_mapping(df)
+        # Primero normalizar las columnas del DataFrame
+        normalized_df = df.copy()
+        normalized_df.columns = [
+            self._normalize_column_name(str(col)) for col in normalized_df.columns
+        ]
+
+        mapping = self.get_mapping(normalized_df)
         missing_fields = self.REQUIRED_FIELDS - set(mapping.values())
 
         if missing_fields:
@@ -88,7 +128,7 @@ class ColumnMapper:
                 f"para los campos internos: {', '.join(sorted(missing_fields))}"
             )
 
-        return df.rename(columns=mapping).reset_index(drop=True)
+        return normalized_df.rename(columns=mapping).reset_index(drop=True)
 
     def get_unrecognized_columns(self, df: pd.DataFrame) -> List[str]:
         """

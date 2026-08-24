@@ -45,3 +45,5 @@ Thumbs.db
 
 # Project specific
 backend/.pytest_cache/
+test_data/*.xlsx
+test_data/*.xls
