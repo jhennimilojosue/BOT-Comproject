@@ -7,7 +7,7 @@ Aplicación principal de FastAPI para el sistema BOT-COMProject.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.routes import uploads, processing, responsible, results, export
+from .api.routes import uploads, processing, responsible, results, export, ai
 from .infrastructure.support.config import settings
 from .infrastructure.support.health_check import HealthChecker
 
@@ -35,6 +35,7 @@ app.include_router(processing.router)
 app.include_router(responsible.router)
 app.include_router(results.router)
 app.include_router(export.router)
+app.include_router(ai.router)
 
 
 @app.get("/", tags=["root"])
