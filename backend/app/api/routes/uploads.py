@@ -4,23 +4,25 @@ Upload Routes - Endpoints para gestión de Uploads.
 Responsabilidades:
 - Recibir archivos Excel del Maestro de Casos
 - Validar y procesar archivos
-- Crear registros de Upload
+- Crear registros de Upload en PostgreSQL
 """
 
-from uuid import UUID
+from uuid import uuid4
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
 
-from ...infrastructure.catalogs.catalog_service import CatalogService
-from ...infrastructure.catalogs.responsible_catalog import ResponsibleCatalog
-from ...infrastructure.catalogs.status_catalog import StatusCatalog
-from ...infrastructure.catalogs.time_catalog import TimeCatalog
-from ...infrastructure.excel.excel_service import ExcelService
+from ...domain.entities.case import Case, CaseType
+from ...domain.entities.upload import Upload, UploadStatus
+from ...infrastructure.database.connection import db_config
 from ...infrastructure.exceptions.excel_exceptions import (
     FileValidationError,
     StructureValidationError,
 )
-from ...infrastructure.store import store
+from ...infrastructure.excel.excel_service import ExcelService
+from ...infrastructure.repositories.case_repository import SQLAlchemyCaseRepository
+from ...infrastructure.repositories.upload_repository import SQLAlchemyUploadRepository
+from ..dependencies import get_db
 from ..schemas.upload import ErrorResponse, UploadCreateResponse
 
 router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
@@ -39,39 +41,72 @@ excel_service = ExcelService()
     summary="Cargar archivo del Maestro de Casos",
     description="Recibe un archivo Excel (.xlsx) del Maestro de Casos de Aranda y crea un Upload.",
 )
-async def create_upload(file: UploadFile = File(...)):
+async def create_upload(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
     """
     Crea un nuevo Upload a partir de un archivo Excel.
 
-    El archivo debe:
-    - Tener extensión .xlsx
-    - Contener las columnas requeridas del Maestro de Casos
-    - Ser legible
-
     Args:
         file: Archivo Excel del Maestro de Casos
+        db: Sesión de base de datos
 
     Returns:
         UploadCreateResponse con el ID del upload creado
-
-    Raises:
-        400: Si el archivo no es válido o no contiene las columnas requeridas
-        500: Si ocurre un error interno
     """
     try:
         # Procesar archivo (validación + extracción de casos)
-        cases = excel_service.process(file)
+        excel_cases = excel_service.process(file)
 
-        # Guardar upload y casos en memoria
-        from uuid import uuid4
+        # Crear entidad Upload
         upload_id = uuid4()
+        upload = Upload(
+            id=upload_id,
+            filename=file.filename,
+            status=UploadStatus.PENDING,
+            total_cases=len(excel_cases),
+        )
 
-        # Convertir casos a diccionarios para almacenamiento
-        cases_dict = [case.model_dump() for case in cases]
+        # Guardar Upload en PostgreSQL
+        upload_repo = SQLAlchemyUploadRepository(db)
+        upload_repo.save(upload)
 
-        # Guardar en el store
-        store.save_upload(upload_id, file.filename, len(cases))
-        store.save_cases(upload_id, cases_dict)
+        # Mapa de normalización de tipos de caso
+        CASE_TYPE_NORMALIZATION = {
+            "INCIDENTES": "Incidente",
+            "REQUERIMIENTOS": "Requerimiento",
+            "INCIDENTE": "Incidente",
+            "REQUERIMIENTO": "Requerimiento",
+        }
+
+        def normalize_case_type(case_type: str) -> CaseType:
+            if not case_type:
+                return CaseType.INCIDENT
+            normalized = CASE_TYPE_NORMALIZATION.get(case_type, case_type)
+            return CaseType(normalized)
+
+        # Convertir casos del Excel a entidades de dominio
+        cases = []
+        for excel_case in excel_cases:
+            case = Case(
+                upload_id=upload_id,
+                case_code=excel_case.case_code,
+                case_type=normalize_case_type(excel_case.case_type),
+                responsible_name=excel_case.responsible_name,
+                user_name=excel_case.user_name,
+                project=excel_case.project or "COMProject",  # Valor por defecto si no existe en Excel
+                registered_at=excel_case.registered_at,
+                status=excel_case.status,
+                final_category=excel_case.final_category,
+                description=excel_case.description or "Sin descripción",
+                solution=excel_case.solution or "Sin solución",
+            )
+            cases.append(case)
+
+        # Guardar Cases en PostgreSQL
+        case_repo = SQLAlchemyCaseRepository(db)
+        case_repo.save_batch(cases)
 
         return UploadCreateResponse(
             upload_id=upload_id,

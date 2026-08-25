@@ -55,8 +55,8 @@ class Processing(BaseModel):
         ...,
         description="Identificador del Upload utilizado"
     )
-    responsible_id: UUID = Field(
-        ...,
+    responsible_id: Optional[UUID] = Field(
+        default=None,
         description="UUID del responsable seleccionado para la ejecución"
     )
     status: ProcessingStatus = Field(

@@ -8,9 +8,11 @@ Responsabilidades:
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
 
-from ...infrastructure.store import store
+from ...infrastructure.database.models.case import CaseModel
+from ..dependencies import get_db
 from ..schemas.responsible import (
     CaseByResponsible,
     ResponsibleCasesResponse,
@@ -42,21 +44,16 @@ def _normalize_case_type(case_type: str) -> str:
     summary="Listar responsables con estadísticas",
     description="Retorna la lista de responsables con el total de casos, incidentes y requerimientos.",
 )
-async def list_responsibles():
+async def list_responsibles(db: Session = Depends(get_db)):
     """
     Lista todos los responsables que tienen casos asignados.
-
-    Retorna las estadísticas de cada responsable:
-    - Total de casos
-    - Incidentes
-    - Requerimientos
 
     Returns:
         ResponsibleListResponse con la lista de responsables
     """
     try:
         # Obtener todos los casos
-        all_cases = store.get_all_cases()
+        all_cases = db.query(CaseModel).all()
 
         if not all_cases:
             return ResponsibleListResponse(
@@ -67,7 +64,7 @@ async def list_responsibles():
         # Agrupar por responsable
         responsibles_dict = {}
         for case in all_cases:
-            responsible_name = case.get("responsible_name")
+            responsible_name = case.responsible_name
             if not responsible_name:
                 continue
 
@@ -80,7 +77,7 @@ async def list_responsibles():
                 }
 
             responsibles_dict[responsible_name]["total_cases"] += 1
-            case_type = _normalize_case_type(case.get("case_type"))
+            case_type = _normalize_case_type(case.case_type)
             if case_type == "Incidente":
                 responsibles_dict[responsible_name]["incidents"] += 1
             elif case_type == "Requerimiento":
@@ -117,6 +114,7 @@ async def list_responsibles():
 async def get_cases_by_responsible(
     responsible_name: str,
     case_type: Optional[str] = Query(None, description="Filtrar por tipo: Incidente o Requerimiento"),
+    db: Session = Depends(get_db),
 ):
     """
     Obtiene todos los casos de un responsable específico.
@@ -127,13 +125,11 @@ async def get_cases_by_responsible(
 
     Returns:
         ResponsibleCasesResponse con los casos del responsable
-
-    Raises:
-        404: Si no se encuentra el responsable
     """
     try:
-        # Obtener casos del responsable
-        cases = store.get_cases_by_responsible(responsible_name)
+        # Buscar casos por responsable
+        query = db.query(CaseModel).filter(CaseModel.responsible_name == responsible_name)
+        cases = query.all()
 
         if not cases:
             raise HTTPException(
@@ -147,27 +143,34 @@ async def get_cases_by_responsible(
         # Filtrar por tipo si se especifica
         if case_type:
             case_type_normalized = _normalize_case_type(case_type)
-            cases = [c for c in cases if _normalize_case_type(c.get("case_type")) == case_type_normalized]
+            cases = [c for c in cases if _normalize_case_type(c.case_type) == case_type_normalized]
 
-        # Obtener estadísticas
-        stats = store.get_responsible_stats(responsible_name)
+        # Calcular estadísticas
+        total = len(cases)
+        incidents = sum(1 for c in cases if _normalize_case_type(c.case_type) == "Incidente")
+        requirements = sum(1 for c in cases if _normalize_case_type(c.case_type) == "Requerimiento")
 
         # Convertir casos a schema
         cases_list = [
             CaseByResponsible(
-                case_code=c.get("case_code", ""),
-                case_type=_normalize_case_type(c.get("case_type")),
-                status=c.get("status", ""),
-                final_category=c.get("final_category"),
-                registered_at=c.get("registered_at"),
-                description=c.get("description"),
+                case_code=c.case_code,
+                case_type=_normalize_case_type(c.case_type),
+                status=c.status,
+                final_category=c.final_category,
+                registered_at=c.registered_at,
+                description=c.description,
             )
             for c in cases
         ]
 
         return ResponsibleCasesResponse(
             responsible_name=responsible_name,
-            stats=ResponsibleStats(**stats),
+            stats=ResponsibleStats(
+                name=responsible_name,
+                total_cases=total,
+                incidents=incidents,
+                requirements=requirements,
+            ),
             cases=cases_list,
         )
 

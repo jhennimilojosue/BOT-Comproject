@@ -55,9 +55,9 @@ class ProcessingModel(Base):
         nullable=False,
         comment="Identificador del Upload utilizado"
     )
-    responsible_id: Mapped[uuid.UUID] = mapped_column(
+    responsible_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        nullable=False,
+        nullable=True,
         comment="UUID del responsable seleccionado para la ejecución"
     )
     status: Mapped[str] = mapped_column(

@@ -137,6 +137,39 @@ class ProcessingService:
             results=results,
         )
 
+    def process_cases_by_responsible(
+        self,
+        cases: List[dict],
+        responsible_name: str,
+    ) -> ProcessingResult:
+        """
+        Procesa casos filtrados por responsable.
+
+        Args:
+            cases: Lista de casos extraídos del Excel
+            responsible_name: Nombre del responsable a filtrar
+
+        Returns:
+            ProcessingResult con los resultados del procesamiento
+        """
+        processing_id = uuid4()
+        results: List[CaseProcessingResult] = []
+
+        for case in cases:
+            result = self._process_single_case(case)
+            results.append(result)
+
+        processed = sum(1 for r in results if r.is_processable)
+        rejected = sum(1 for r in results if not r.is_processable)
+
+        return ProcessingResult(
+            processing_id=processing_id,
+            total_cases=len(cases),
+            processed_cases=processed,
+            rejected_cases=rejected,
+            results=results,
+        )
+
     def _process_single_case(self, case: dict) -> CaseProcessingResult:
         """
         Procesa un caso individual.

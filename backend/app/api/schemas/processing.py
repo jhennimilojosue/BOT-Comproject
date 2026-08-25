@@ -20,9 +20,11 @@ class ProcessingRequest(BaseModel):
     Attributes:
         upload_id: Identificador del upload con los casos
         responsible_id: UUID del responsable seleccionado
+        responsible_name: Nombre del responsable para filtrar (opcional)
     """
     upload_id: UUID = Field(..., description="Identificador del upload con los casos")
     responsible_id: Optional[UUID] = Field(None, description="UUID del responsable seleccionado")
+    responsible_name: Optional[str] = Field(None, description="Nombre del responsable para filtrar")
 
     class Config:
         json_schema_extra = {
