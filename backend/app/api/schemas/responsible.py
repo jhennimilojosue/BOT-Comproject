@@ -51,6 +51,7 @@ class CaseByResponsible(BaseModel):
         final_category: Categoría final
         registered_at: Fecha de registro
         description: Descripción del caso
+        solution: Solución del caso
     """
     case_code: str = Field(..., description="Código del caso")
     case_type: str = Field(..., description="Tipo de caso")
@@ -58,6 +59,7 @@ class CaseByResponsible(BaseModel):
     final_category: Optional[str] = Field(None, description="Categoría final")
     registered_at: Optional[str] = Field(None, description="Fecha de registro")
     description: Optional[str] = Field(None, description="Descripción del caso")
+    solution: Optional[str] = Field(None, description="Solución del caso")
 
 
 class ResponsibleCasesResponse(BaseModel):
@@ -66,9 +68,11 @@ class ResponsibleCasesResponse(BaseModel):
 
     Attributes:
         responsible_name: Nombre del responsable
+        processing_id: ID del último procesamiento (si existe)
         stats: Estadísticas del responsable
         cases: Lista de casos del responsable
     """
     responsible_name: str = Field(..., description="Nombre del responsable")
+    processing_id: Optional[str] = Field(None, description="ID del último procesamiento")
     stats: ResponsibleStats = Field(..., description="Estadísticas del responsable")
     cases: List[CaseByResponsible] = Field(..., description="Lista de casos")

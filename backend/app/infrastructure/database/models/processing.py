@@ -60,6 +60,11 @@ class ProcessingModel(Base):
         nullable=True,
         comment="UUID del responsable seleccionado para la ejecución"
     )
+    responsible_name: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        comment="Nombre del responsable seleccionado para la ejecución"
+    )
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

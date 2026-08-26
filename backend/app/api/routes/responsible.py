@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ...infrastructure.database.models.case import CaseModel
+from ...infrastructure.database.models.processing import ProcessingModel
 from ..dependencies import get_db
 from ..schemas.responsible import (
     CaseByResponsible,
@@ -159,12 +160,24 @@ async def get_cases_by_responsible(
                 final_category=c.final_category,
                 registered_at=c.registered_at,
                 description=c.description,
+                solution=c.solution,
             )
             for c in cases
         ]
 
+        # Buscar último processing del responsable
+        latest_processing = (
+            db.query(ProcessingModel)
+            .filter(ProcessingModel.responsible_name == responsible_name)
+            .order_by(ProcessingModel.created_at.desc())
+            .first()
+        )
+
+        processing_id = str(latest_processing.id) if latest_processing else None
+
         return ResponsibleCasesResponse(
             responsible_name=responsible_name,
+            processing_id=processing_id,
             stats=ResponsibleStats(
                 name=responsible_name,
                 total_cases=total,
