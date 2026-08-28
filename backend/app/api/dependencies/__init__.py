@@ -11,12 +11,12 @@ from typing import Generator
 
 from sqlalchemy.orm import Session
 
-from ..infrastructure.catalogs.catalog_service import CatalogService
-from ..infrastructure.catalogs.responsible_catalog import ResponsibleCatalog
-from ..infrastructure.catalogs.status_catalog import StatusCatalog
-from ..infrastructure.catalogs.time_catalog import TimeCatalog
-from ..infrastructure.database.connection import db_config
-from ..infrastructure.processing.processing_service import ProcessingService
+from ...infrastructure.catalogs.catalog_service import CatalogService
+from ...infrastructure.catalogs.responsible_catalog import ResponsibleCatalog
+from ...infrastructure.catalogs.status_catalog import StatusCatalog
+from ...infrastructure.catalogs.time_catalog import TimeCatalog
+from ...infrastructure.database.connection import db_config
+from ...infrastructure.processing.processing_service import ProcessingService
 
 
 def get_db() -> Generator[Session, None, None]:
