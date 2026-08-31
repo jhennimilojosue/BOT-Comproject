@@ -73,69 +73,26 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         await ws_manager.disconnect(client_id)
 
 
-# ============================================================================
-# PROCESS RESPONSIBLE ENDPOINT (ASYNC)
-# ============================================================================
-
-
 @router.post(
     "/process-responsible",
     response_model=ProcessResponsibleResponse,
     summary="Procesar casos de un responsable con IA",
     description="Procesa todos los casos de un responsable que estén en el catálogo, generando descripción con IA y tiempo del catálogo.",
 )
-async def process_responsible(
+def process_responsible(
     request: ProcessResponsibleRequest,
-    client_id: Optional[str] = Query(None, description="ID del cliente WebSocket para progreso"),
     db: Session = Depends(get_db),
 ):
-    """
-    Procesa todos los casos de un responsable seleccionado.
+    """Procesa los casos síncronamente inline con httpx."""
+    import httpx
 
-    Flujo:
-    1. Carga catálogo de tiempos desde PostgreSQL
-    2. Consulta casos del responsable (Requerimientos + Incidentes)
-    3. Filtra casos que están en el catálogo
-    4. Para cada caso: genera descripción con IA + tiempo del catálogo
-    5. Guarda resultados en ai_results
-    6. Retorna resumen
-
-    Args:
-        request: Datos del request (upload_id, responsible_name)
-        client_id: ID del cliente WebSocket (opcional)
-        db: Sesión de base de datos
-
-    Returns:
-        Respuesta con resultados y resumen
-    """
     try:
-        # Verificar servicio de IA
-        provider = OllamaProvider()
-        ai_service = AIService(ai_provider=provider)
-
-        if not await ai_service.health_check():
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "error": "AI_SERVICE_UNAVAILABLE",
-                    "message": "El servicio de IA no está disponible",
-                },
-            )
-
-        # Cargar catálogo de tiempos
         catalog_repo = SQLAlchemyCatalogoTiempoRepository(db)
         all_catalog_paths = catalog_repo.get_all_paths()
 
         if not all_catalog_paths:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": "CATALOG_EMPTY",
-                    "message": "El catálogo de tiempos está vacío",
-                },
-            )
+            raise HTTPException(status_code=404, detail={"error": "CATALOG_EMPTY", "message": "El catálogo de tiempos está vacío"})
 
-        # Consultar casos del responsable (Requerimientos + Incidentes)
         cases = (
             db.query(CaseModel)
             .filter(
@@ -147,76 +104,41 @@ async def process_responsible(
         )
 
         if not cases:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": "NO_CASES_FOUND",
-                    "message": f"No se encontraron casos para el responsable '{request.responsible_name}'",
-                },
-            )
+            raise HTTPException(status_code=404, detail={"error": "NO_CASES_FOUND", "message": f"No se encontraron casos para '{request.responsible_name}'"})
 
-        # Filtrar casos que están en el catálogo
-        processable_cases = []
-        for case in cases:
-            if catalog_repo.find_by_path(case.final_category):
-                processable_cases.append(case)
+        processable_cases = [c for c in cases if catalog_repo.find_by_path(c.final_category)]
 
         if not processable_cases:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": "NO_CASES_IN_CATALOG",
-                    "message": "Ninguno de los casos está en el catálogo de tiempos",
-                },
-            )
+            raise HTTPException(status_code=404, detail={"error": "NO_CASES_IN_CATALOG", "message": "Ningún caso está en el catálogo de tiempos"})
 
-        # Crear processing_id único
-        processing_id = uuid.uuid4()
-
-        # Crear registro de processing
         processing = ProcessingModel(
             upload_id=request.upload_id,
             responsible_id=None,
             responsible_name=request.responsible_name,
             status="processing",
-            cases_total=len(cases),
-            cases_processed=0,
-            cases_rejected=0,
+            total_cases=len(cases),
+            processed_cases=0,
+            rejected_cases=0,
         )
         db.add(processing)
-        db.flush()
+        db.commit()
+        db.refresh(processing)
         processing_id = processing.id
 
-        # Repositorio de resultados AI
+        config = AIConfig()
+        provider = OllamaProvider()
+        ai_service = AIService(ai_provider=provider)
         ai_result_repo = SQLAlchemyAIResultRepository(db)
 
-        # Procesar cada caso
         results = []
-        total_tokens = 0
-        total_latency = 0.0
+        results_count = 0
         rejected = 0
 
         for idx, case in enumerate(processable_cases):
-            # Enviar progreso por WebSocket
-            if client_id:
-                await ws_manager.send_progress(
-                    client_id,
-                    {
-                        "type": "progress",
-                        "current": idx + 1,
-                        "total": len(processable_cases),
-                        "case_code": case.case_code,
-                        "status": "processing",
-                        "message": f"Procesando caso {idx + 1}/{len(processable_cases)}",
-                    },
-                )
-
             try:
-                # Obtener tiempo del catálogo
                 time_range = catalog_repo.get_time_range(case.final_category)
                 estimated_minutes = (time_range["min"] + time_range["max"]) // 2
 
-                # Generar descripción con IA
                 case_data = {
                     "case_code": case.case_code,
                     "case_type": case.case_type,
@@ -225,106 +147,71 @@ async def process_responsible(
                     "solution": case.solution or "",
                 }
 
+                prompt = ai_service._build_description_context(case_data)
                 start_time = time.time()
-                ai_response = await ai_service.generate_description(case_data)
-                latency_ms = (time.time() - start_time) * 1000
 
-                if ai_response.success:
-                    # Parsear descripción
-                    parsed = parser.parse_description(ai_response.content)
+                with httpx.Client(timeout=config.timeout) as client:
+                    response = client.post(
+                        f"{provider.base_url}/api/generate",
+                        json={
+                            "model": config.model,
+                            "prompt": prompt,
+                            "stream": False,
+                            "options": {"temperature": config.temperature, "num_predict": config.max_tokens},
+                        },
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    latency_ms = (time.time() - start_time) * 1000
+                    ai_content = data.get("response", "")
+                    tokens_used = data.get("eval_count", 0)
+
+                if ai_content:
+                    parsed = parser.parse_description(ai_content)
                     generated_description = parsed.text
 
-                    # Guardar resultado
-                    ai_result = ai_result_repo.save(
+                    ai_result_repo.save(
                         processing_id=processing_id,
                         case_id=case.id,
                         case_code=case.case_code,
                         estimated_minutes=estimated_minutes,
                         generated_description=generated_description,
-                        model_name=ai_service.config.model,
-                        tokens_used=ai_response.tokens_used or 0,
+                        model_name=config.model,
+                        tokens_used=tokens_used,
                         latency_ms=latency_ms,
                     )
+                    results_count += 1
 
-                    total_tokens += ai_response.tokens_used or 0
-                    total_latency += latency_ms
-
-                    results.append(
-                        AIResultResponse(
-                            case_code=case.case_code,
-                            final_category=case.final_category,
-                            status=case.status,
-                            case_type=case.case_type,
-                            generated_description=generated_description,
-                            estimated_minutes=estimated_minutes,
-                            model_name=ai_service.config.model,
-                            tokens_used=ai_response.tokens_used or 0,
-                            latency_ms=latency_ms,
-                        )
-                    )
-
-                    # Enviar caso completado
-                    if client_id:
-                        await ws_manager.send_progress(
-                            client_id,
-                            {
-                                "type": "case_completed",
-                                "current": idx + 1,
-                                "total": len(processable_cases),
-                                "case_code": case.case_code,
-                                "status": "completed",
-                                "message": f"Caso {case.case_code} procesado",
-                            },
-                        )
+                    results.append(AIResultResponse(
+                        case_code=case.case_code,
+                        final_category=case.final_category,
+                        status=case.status,
+                        case_type=case.case_type,
+                        generated_description=generated_description,
+                        estimated_minutes=estimated_minutes,
+                        model_name=config.model,
+                        tokens_used=tokens_used,
+                        latency_ms=latency_ms,
+                    ))
                 else:
                     rejected += 1
-                    if client_id:
-                        await ws_manager.send_progress(
-                            client_id,
-                            {
-                                "type": "case_error",
-                                "current": idx + 1,
-                                "total": len(processable_cases),
-                                "case_code": case.case_code,
-                                "status": "error",
-                                "message": f"Error en caso {case.case_code}: {ai_response.error}",
-                            },
-                        )
             except Exception as e:
                 rejected += 1
-                if client_id:
-                    await ws_manager.send_progress(
-                        client_id,
-                        {
-                            "type": "case_error",
-                            "current": idx + 1,
-                            "total": len(processable_cases),
-                            "case_code": case.case_code,
-                            "status": "error",
-                            "message": f"Error en caso {case.case_code}: {str(e)}",
-                        },
-                    )
 
-        # Actualizar processing
         processing.status = "completed"
-        processing.cases_processed = len(results)
-        processing.cases_rejected = rejected
-
-        # Commit
+        processing.processed_cases = results_count
+        processing.rejected_cases = rejected
         db.commit()
 
-        # Calcular resumen
         total_minutes = sum(r.estimated_minutes for r in results)
         total_hours = total_minutes / 60
         avg_minutes = total_minutes / len(results) if results else 0
 
         by_type = defaultdict(lambda: {"count": 0, "hours": 0})
         by_category = defaultdict(lambda: {"count": 0, "hours": 0})
-
         for r in results:
             by_type[r.case_type]["count"] += 1
             by_type[r.case_type]["hours"] += r.estimated_minutes / 60
-
             cat_short = r.final_category.split(".")[-1] if "." in r.final_category else r.final_category
             by_category[cat_short]["count"] += 1
             by_category[cat_short]["hours"] += r.estimated_minutes / 60
@@ -336,24 +223,12 @@ async def process_responsible(
             by_category=dict(by_category),
         )
 
-        # Enviar completado por WebSocket
-        if client_id:
-            await ws_manager.send_progress(
-                client_id,
-                {
-                    "type": "completed",
-                    "message": "Procesamiento completado",
-                    "processed": len(results),
-                    "rejected": rejected,
-                },
-            )
-
         return ProcessResponsibleResponse(
             processing_id=processing_id,
             responsible_name=request.responsible_name,
             total_cases=len(cases),
             cases_in_catalog=len(processable_cases),
-            processed=len(results),
+            processed=results_count,
             rejected=rejected,
             results=results,
             summary=summary,
@@ -362,13 +237,7 @@ async def process_responsible(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": "INTERNAL_ERROR",
-                "message": f"Error al procesar casos: {str(e)}",
-            }
-        )
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR", "message": f"Error: {str(e)}"})
 
 
 # ============================================================================
