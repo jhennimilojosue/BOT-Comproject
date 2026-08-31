@@ -158,7 +158,7 @@ async def get_cases_by_responsible(
                 case_type=_normalize_case_type(c.case_type),
                 status=c.status,
                 final_category=c.final_category,
-                registered_at=c.registered_at,
+                registered_at=c.registered_at.isoformat() if c.registered_at else None,
                 description=c.description,
                 solution=c.solution,
             )
