@@ -44,6 +44,7 @@ def _normalize_case_type(case_type: str) -> str:
     response_model=ResponsibleListResponse,
     summary="Listar responsables con estadísticas",
     description="Retorna la lista de responsables con el total de casos, incidentes y requerimientos.",
+    operation_id="list_responsibles_responsible",
 )
 async def list_responsibles(db: Session = Depends(get_db)):
     """
@@ -111,6 +112,7 @@ async def list_responsibles(db: Session = Depends(get_db)):
     response_model=ResponsibleCasesResponse,
     summary="Obtener casos por responsable",
     description="Retorna todos los casos de un responsable específico con sus estadísticas.",
+    operation_id="get_cases_by_responsible_name",
 )
 async def get_cases_by_responsible(
     responsible_name: str,

@@ -31,6 +31,32 @@ router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
 excel_service = ExcelService()
 
 
+@router.get(
+    "",
+    summary="Listar uploads existentes",
+    description="Retorna la lista de uploads cargados con su ID, nombre de archivo y fecha.",
+    operation_id="list_uploads",
+)
+async def list_uploads(db: Session = Depends(get_db)):
+    """Lista todos los uploads existentes en la base de datos."""
+    from ...infrastructure.database.models.upload import UploadModel
+
+    uploads = db.query(UploadModel).order_by(UploadModel.created_at.desc()).all()
+    return {
+        "uploads": [
+            {
+                "upload_id": str(u.id),
+                "filename": u.filename,
+                "status": u.status,
+                "total_cases": u.total_cases,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            }
+            for u in uploads
+        ],
+        "total": len(uploads),
+    }
+
+
 @router.post(
     "",
     response_model=UploadCreateResponse,

@@ -10,8 +10,11 @@ Responsabilidades:
 import os
 from typing import Generator
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+load_dotenv()
 
 
 class DatabaseConfig:
@@ -32,7 +35,7 @@ class DatabaseConfig:
         if database_url is None:
             database_url = os.getenv(
                 "DATABASE_URL",
-                "postgresql://postgres:postgres@localhost:5432/botcomproject"
+                "postgresql://postgres:postgres@localhost:5432/bot_comproject"
             )
         self.database_url = database_url
         self._engine = None

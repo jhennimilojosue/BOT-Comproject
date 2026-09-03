@@ -8,6 +8,7 @@ Responsabilidades:
 - Validar formato de respuestas
 """
 
+import json
 import re
 from dataclasses import dataclass
 from typing import Optional
@@ -67,7 +68,7 @@ class ResponseParser:
                 error="Respuesta vacía"
             )
 
-        # Limpiar la respuesta
+        # Limpiar la respuesta (incluye extraer descripción de JSON si aplica)
         cleaned = self._clean_response(raw_response)
 
         # Verificar que comience con "Se realizó"
@@ -131,8 +132,15 @@ class ResponseParser:
         Returns:
             Respuesta limpia
         """
+        cleaned = response.strip()
+
+        # Si la respuesta es JSON (posiblemente en bloque markdown), extraer "description"
+        parsed = self._extract_from_json(cleaned)
+        if parsed is not None:
+            cleaned = parsed
+
         # Eliminar comillas al inicio y final
-        cleaned = self.QUOTES_PATTERN.sub("", response.strip())
+        cleaned = self.QUOTES_PATTERN.sub("", cleaned.strip())
 
         # Eliminar saltos de línea múltiples
         cleaned = self.WHITESPACE_PATTERN.sub(" ", cleaned)
@@ -145,6 +153,44 @@ class ResponseParser:
             cleaned += "."
 
         return cleaned
+
+    def _extract_from_json(self, text: str) -> Optional[str]:
+        """
+        Intenta extraer el campo 'description' de un texto que sea JSON.
+
+        Maneja respuestas con formato:
+        - `{"description": "..."}`
+        - `` ```json\n{"description": "..."}\n``` ``
+        - `` ```\n{"description": "..."}\n``` ``
+
+        Args:
+            text: Texto de la IA
+
+        Returns:
+            El valor de "description" si se pudo extraer y es una cadena, si no None.
+        """
+        stripped = text.strip()
+
+        # Quitar bloques de código markdown
+        code_block_pattern = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
+        match = code_block_pattern.match(stripped)
+        if match:
+            inner = match.group(1).strip()
+        else:
+            inner = stripped
+
+        # Intentar parsear como JSON
+        try:
+            data = json.loads(inner)
+        except (json.JSONDecodeError, TypeError):
+            return None
+
+        if isinstance(data, dict):
+            value = data.get("description")
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+        return None
 
     def _extract_minutes(self, response: str) -> int:
         """

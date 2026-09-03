@@ -7,8 +7,8 @@ Aplicación principal de FastAPI para el sistema BOT-COMProject.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.routes import uploads, processing, responsible, results, export, ai
 from .infrastructure.support.config import settings
+from .api.routes import uploads, processing, responsible, results, export, ai
 from .infrastructure.support.health_check import HealthChecker
 
 # Crear aplicación
@@ -61,8 +61,15 @@ async def health_check():
     Returns:
         Estado del sistema
     """
-    checker = HealthChecker()
-    return checker.check_all()
+    from .api.dependencies import get_db
+    from sqlalchemy.orm import Session
+    
+    db = next(get_db())
+    try:
+        checker = HealthChecker(db_session=db)
+        return checker.check_all()
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

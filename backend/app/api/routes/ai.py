@@ -33,6 +33,7 @@ from ...infrastructure.ai.ai_service import AIService
 from ...infrastructure.ai.models import AIConfig
 from ...infrastructure.ai.ollama_provider import OllamaProvider
 from ...infrastructure.ai.response_parser import ResponseParser
+from ...infrastructure.support.config import settings
 from ..dependencies import get_db
 from ...infrastructure.database.models.case import CaseModel
 from ...infrastructure.database.models.processing import ProcessingModel
@@ -125,9 +126,9 @@ def process_responsible(
         db.refresh(processing)
         processing_id = processing.id
 
-        config = AIConfig()
+        config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
         provider = OllamaProvider()
-        ai_service = AIService(ai_provider=provider)
+        ai_service = AIService(ai_provider=provider, config=config)
         ai_result_repo = SQLAlchemyAIResultRepository(db)
 
         results = []
@@ -243,6 +244,74 @@ def process_responsible(
 # ============================================================================
 # CATALOG ENDPOINT
 # ============================================================================
+
+
+@router.post(
+    "/catalog/load",
+    summary="Cargar catálogo de tiempos desde Excel",
+    description="Carga las categorías del catálogo de tiempos desde el archivo Excel.",
+)
+async def load_catalog(db: Session = Depends(get_db)):
+    """Carga el catálogo de tiempos desde Excel a PostgreSQL."""
+    import os
+    import unicodedata
+
+    import pandas as pd
+
+    from ...infrastructure.database.models.catalogo_tiempos import CatalogoTiempoModel
+
+    file_path = r"C:\Bot-Comproject\test_data\catalogo_tiempos.xlsx"
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail={"error": "FILE_NOT_FOUND", "message": f"No se encontró {file_path}"})
+
+    def normalize_path(s):
+        s = s.lower().strip()
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+        s = s.replace("  ", " ")
+        s = s.replace("infrastructura", "infraestructura")
+        return s
+
+    df = pd.read_excel(file_path, header=0)
+    df.columns = ["idx", "Categoria", "Subcategoria", "Item", "TiempoMin", "TiempoMax"]
+    df = df.iloc[1:]
+    df = df.dropna(subset=["TiempoMin", "TiempoMax"])
+
+    last_cat = None
+    last_sub = None
+    count = 0
+
+    db.query(CatalogoTiempoModel).delete()
+
+    for _, row in df.iterrows():
+        cat = str(row["Categoria"]).strip() if pd.notna(row["Categoria"]) else last_cat
+        sub = str(row["Subcategoria"]).strip() if pd.notna(row["Subcategoria"]) else last_sub
+        item = str(row["Item"]).strip() if pd.notna(row["Item"]) else None
+        if pd.notna(row["Categoria"]):
+            last_cat = cat
+        if pd.notna(row["Subcategoria"]):
+            last_sub = sub
+
+        parts = [p for p in [cat, sub, item] if p]
+        path_completo = ".".join(parts)
+        path_normalizado = normalize_path(path_completo)
+
+        record = CatalogoTiempoModel(
+            nivel1=cat,
+            nivel2=sub,
+            nivel3=item,
+            path_completo=path_completo,
+            path_normalizado=path_normalizado,
+            tiempo_min=int(row["TiempoMin"]),
+            tiempo_max=int(row["TiempoMax"]),
+        )
+        db.add(record)
+        count += 1
+
+    db.commit()
+
+    return {"message": f"Catálogo cargado: {count} categorías", "total": count}
 
 
 @router.get(
@@ -576,8 +645,9 @@ async def ai_health_check():
         Estado del servicio de IA
     """
     try:
+        config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
         provider = OllamaProvider()
-        ai_service = AIService(ai_provider=provider)
+        ai_service = AIService(ai_provider=provider, config=config)
 
         is_healthy = await ai_service.health_check()
 
@@ -593,3 +663,120 @@ async def ai_health_check():
             model="unknown",
             available=False,
         )
+
+
+class TestProcessRequest(BaseModel):
+    upload_id: str
+    responsible_name: str
+    max_cases: int = 5
+
+
+class TestProcessResponse(BaseModel):
+    results: list
+    total_processed: int
+
+
+@router.post(
+    "/test-process",
+    response_model=TestProcessResponse,
+    summary="Probar procesamiento IA sin guardar en BD",
+    description="Procesa casos con IA y devuelve resultados sin guardar en base de datos.",
+)
+def test_process_ai(
+    request: TestProcessRequest,
+    db: Session = Depends(get_db),
+):
+    """Procesa casos con IA sin guardar resultados."""
+    import httpx
+    from ...infrastructure.ai.response_parser import ResponseParser
+
+    catalog_repo = SQLAlchemyCatalogoTiempoRepository(db)
+    all_catalog_paths = catalog_repo.get_all_paths()
+
+    if not all_catalog_paths:
+        raise HTTPException(status_code=404, detail={"error": "CATALOG_EMPTY"})
+
+    cases = (
+        db.query(CaseModel)
+        .filter(
+            CaseModel.upload_id == request.upload_id,
+            CaseModel.responsible_name == request.responsible_name,
+            CaseModel.case_type.in_(["Incidente", "Requerimiento"]),
+        )
+        .limit(request.max_cases)
+        .all()
+    )
+
+    if not cases:
+        raise HTTPException(status_code=404, detail={"error": "NO_CASES_FOUND"})
+
+    processable_cases = [c for c in cases if catalog_repo.find_by_path(c.final_category)]
+
+    if not processable_cases:
+        raise HTTPException(status_code=404, detail={"error": "NO_CASES_IN_CATALOG"})
+
+    config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
+    provider = OllamaProvider()
+    ai_service = AIService(ai_provider=provider, config=config)
+    parser = ResponseParser()
+
+    results = []
+
+    for case in processable_cases:
+        try:
+            time_range = catalog_repo.get_time_range(case.final_category)
+            estimated_minutes = (time_range["min"] + time_range["max"]) // 2
+
+            case_data = {
+                "case_code": case.case_code,
+                "case_type": case.case_type,
+                "final_category": case.final_category,
+                "description": case.description,
+                "solution": case.solution or "",
+            }
+
+            prompt = ai_service._build_description_context(case_data)
+            start_time = time.time()
+
+            with httpx.Client(timeout=config.timeout) as client:
+                response = client.post(
+                    f"{provider.base_url}/api/generate",
+                    json={
+                        "model": config.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {"temperature": config.temperature, "num_predict": config.max_tokens},
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                latency_ms = (time.time() - start_time) * 1000
+                ai_content = data.get("response", "")
+                tokens_used = data.get("eval_count", 0)
+
+            if ai_content:
+                parsed = parser.parse_description(ai_content)
+                generated_description = parsed.text
+            else:
+                generated_description = "Sin descripción generada"
+
+            results.append({
+                "case_code": case.case_code,
+                "final_category": case.final_category,
+                "original_description": case.description,
+                "solution": case.solution,
+                "generated_description": generated_description,
+                "estimated_minutes": estimated_minutes,
+                "time_range": f"{time_range['min']}-{time_range['max']} min",
+                "latency_ms": round(latency_ms, 2),
+                "tokens_used": tokens_used,
+            })
+
+        except Exception as e:
+            results.append({
+                "case_code": case.case_code,
+                "final_category": case.final_category,
+                "error": str(e),
+            })
+
+    return TestProcessResponse(results=results, total_processed=len(results))
