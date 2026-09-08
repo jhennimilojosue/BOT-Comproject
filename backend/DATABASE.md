@@ -77,7 +77,8 @@ db_config.create_all_tables()
 | `processings` | Processing executions |
 | `processing_rejections` | Rejected cases |
 | `estimations` | Time estimations |
-| `ai_results` | AI-generated results |
+| `ai_results` | AI-generated descriptions and times |
+| `catalogo_tiempos` | Time catalog (Excel `test_data/catalogo_tiempos.xlsx`) loaded into PostgreSQL |
 
 ### Relationships
 
@@ -91,6 +92,26 @@ Case 1 ──── N ProcessingRejection
 Case 1 ──── N Estimation
 Case 1 ──── N AIResult
 ```
+
+### `ai_results` fields
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `processing_id` | UUID | Reference to `processings` |
+| `case_id` | UUID | Reference to `cases` |
+| `case_code` | String(50) | Codigo Caso (Aranda) |
+| `case_type` | String(50) | `Incidente` / `Requerimiento` |
+| `status` | String(100) | Estado del caso |
+| `final_category` | String(200) | Categoría final del caso |
+| `estimated_minutes` | Integer | Tiempo recomendado (minutos, del catálogo) |
+| `generated_description` | Text | Descripción profesional generada (inicia con "Se realizó") |
+| `model_name` | String(100) | Modelo de Ollama usado |
+| `tokens_used` | Integer | Tokens de la inferencia |
+| `latency_ms` | Float | Latencia de la respuesta (ms) |
+| `created_at` | DateTime(timezone) | Fecha de creación (UTC) |
+
+Migrations are applied with Alembic from `backend/alembic/versions/` (currently up to revision `005`).
 
 ## Common Commands
 

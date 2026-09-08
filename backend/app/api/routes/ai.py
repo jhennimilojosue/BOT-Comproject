@@ -12,6 +12,7 @@ Responsabilidades:
 import time
 import uuid
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -112,19 +113,26 @@ def process_responsible(
         if not processable_cases:
             raise HTTPException(status_code=404, detail={"error": "NO_CASES_IN_CATALOG", "message": "Ningún caso está en el catálogo de tiempos"})
 
-        processing = ProcessingModel(
-            upload_id=request.upload_id,
-            responsible_id=None,
-            responsible_name=request.responsible_name,
-            status="processing",
-            total_cases=len(cases),
-            processed_cases=0,
-            rejected_cases=0,
+        # Reutilizar el processing del archivo (creado al subir el upload).
+        # Todos los responsables procesados se acumulan bajo este mismo processing_id.
+        processing = (
+            db.query(ProcessingModel)
+            .filter(ProcessingModel.upload_id == request.upload_id)
+            .first()
         )
-        db.add(processing)
+        if processing is None:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": "PROCESSING_NOT_FOUND",
+                    "message": "El archivo no tiene un processing asociado. Súbelo por POST /api/v1/uploads para generarlo.",
+                },
+            )
+        processing_id = processing.id
+        processing.status = "processing"
+        processing.started_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(processing)
-        processing_id = processing.id
 
         config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
         provider = OllamaProvider()
@@ -180,6 +188,9 @@ def process_responsible(
                         model_name=config.model,
                         tokens_used=tokens_used,
                         latency_ms=latency_ms,
+                        case_type=case.case_type,
+                        status=case.status,
+                        final_category=case.final_category,
                     )
                     results_count += 1
 
@@ -200,8 +211,9 @@ def process_responsible(
                 rejected += 1
 
         processing.status = "completed"
-        processing.processed_cases = results_count
-        processing.rejected_cases = rejected
+        processing.processed_cases = (processing.processed_cases or 0) + results_count
+        processing.rejected_cases = (processing.rejected_cases or 0) + rejected
+        processing.completed_at = datetime.now(timezone.utc)
         db.commit()
 
         total_minutes = sum(r.estimated_minutes for r in results)
@@ -404,9 +416,9 @@ async def get_results(
             results.append(
                 AIResultResponse(
                     case_code=r.case_code,
-                    final_category="",
-                    status="",
-                    case_type="",
+                    final_category=r.final_category or "",
+                    status=r.status or "",
+                    case_type=r.case_type or "",
                     generated_description=r.generated_description,
                     estimated_minutes=r.estimated_minutes,
                     model_name=r.model_name,
@@ -420,16 +432,28 @@ async def get_results(
         total_hours = total_minutes / 60
         avg_minutes = total_minutes / len(results) if results else 0
 
+        from collections import defaultdict
+        by_type = defaultdict(lambda: {"count": 0, "hours": 0})
+        by_category = defaultdict(lambda: {"count": 0, "hours": 0})
+        for r in results:
+            if r.case_type:
+                by_type[r.case_type]["count"] += 1
+                by_type[r.case_type]["hours"] += r.estimated_minutes / 60
+            if r.final_category:
+                cat_short = r.final_category.split(".")[-1] if "." in r.final_category else r.final_category
+                by_category[cat_short]["count"] += 1
+                by_category[cat_short]["hours"] += r.estimated_minutes / 60
+
         summary = ProcessingSummary(
             total_hours=round(total_hours, 2),
             avg_minutes=round(avg_minutes, 2),
-            by_type={},
-            by_category={},
+            by_type=dict(by_type),
+            by_category=dict(by_category),
         )
 
         return GetResultsResponse(
             processing_id=processing_id,
-            responsible_name=processing.responsible_name if hasattr(processing, "responsible_name") else "",
+            responsible_name=processing.responsible_name or "",
             total_results=len(results),
             results=results,
             summary=summary,

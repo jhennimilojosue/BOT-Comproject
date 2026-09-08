@@ -44,7 +44,7 @@ BOT-COMProject automatiza el procesamiento semanal de casos de Aranda para gener
 Stack tecnológico:
 - Backend: FastAPI + Python 3.11
 - Database: PostgreSQL + SQLAlchemy 2.0 + Alembic
-- AI: Ollama (qwen2.5:latest)
+- AI: Ollama (qwen2.5-coder:3b)
 - Frontend: React + Vite
 - Testing: pytest
 - Arquitectura: Clean Architecture (domain, application, infrastructure, presentation)
@@ -236,7 +236,7 @@ Crear el AI Provider abstraction en backend/app/infrastructure/ai/ai_provider.py
 
 ## Configuración de IA (Pydantic)
 class AIConfig(BaseModel):
-    model: str = "qwen2.5:latest"
+    model: str = "qwen2.5-coder:3b"
     temperature: float = 0.3
     timeout: int = 60
     max_tokens: int = 500
@@ -248,17 +248,29 @@ class AIResponse(BaseModel):
     success: bool
     error: Optional[str] = None
 
-## Los 8 Endpoints de la API
+## Endpoints de la API (registrados en main.py)
 | Método | Endpoint | Propósito |
 |--------|----------|-----------|
-| GET | /api/v1/responsibles | Lista responsables activos |
-| POST | /api/v1/uploads | Carga archivo Excel |
-| POST | /api/v1/cases/process | Ejecuta procesamiento |
+| GET | /health | Estado general del sistema |
+| GET | /api/v1/uploads | Lista de uploads cargados |
+| POST | /api/v1/uploads | Carga archivo Excel (Maestro de Casos) |
+| POST | /api/v1/cases/process | Procesamiento por reglas de negocio |
+| GET | /api/v1/cases/responsible | Responsables con conteo de casos |
+| GET | /api/v1/cases/responsible/{name} | Casos de un responsable |
 | GET | /api/v1/processing/{id} | Consulta resultados |
 | GET | /api/v1/processing/{id}/rejected | Consulta rechazados |
-| GET | /api/v1/cases | Consulta casos (paginación) |
-| GET | /api/v1/cases/{id} | Consulta caso individual |
-| GET | /api/v1/processing/{id}/export | Exporta a Excel |
+| GET | /api/v1/processing/{id}/export | Exporta a Excel (11 columnas, incluye Descripción IA y Tiempo Estimado) |
+| POST | /api/v1/ai/process-responsible | Procesa todos los casos en catálogo de un responsable (batch, guarda en BD) |
+| POST | /api/v1/ai/catalog/load | Carga el catálogo de tiempos desde Excel |
+| GET | /api/v1/ai/catalog | Devuelve el catálogo de tiempos |
+| GET | /api/v1/ai/results/{processing_id} | Resultados IA guardados (resumen por tipo/categoría) |
+| POST | /api/v1/ai/generate-description | Genera descripción con IA (caso individual) |
+| POST | /api/v1/ai/estimate-time | Estima tiempo con IA (caso individual) |
+| GET | /api/v1/ai/health | Estado del servicio de IA |
+| POST | /api/v1/ai/test-process | Prueba de procesamiento IA sin guardar en BD |
+| WS | /api/v1/ai/ws/{client_id} | Progreso en tiempo real |
+
+> Nota: `routers/responsibles.py` (`GET /api/v1/responsibles`) y `routers/cases.py` (`GET /api/v1/cases`, `GET /api/v1/cases/{id}`) existen como stubs pero NO están registrados en `main.py`.
 
 ## El Flujo Principal (ProcessCases)
 Upload → Excel Service → Case Management → Estimation Engine → AI Service → Results

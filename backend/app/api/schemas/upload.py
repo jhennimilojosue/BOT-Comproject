@@ -49,15 +49,18 @@ class UploadCreateResponse(BaseModel):
 
     Attributes:
         upload_id: Identificador del upload creado
+        processing_id: Identificador del processing del archivo (un processing por upload)
         message: Mensaje de confirmación
     """
     upload_id: UUID = Field(..., description="Identificador del upload creado")
+    processing_id: UUID = Field(..., description="Identificador del processing del archivo")
     message: str = Field(..., description="Mensaje de confirmación")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "upload_id": "550e8400-e29b-41d4-a716-446655440000",
+                "processing_id": "750e8400-e29b-41d4-a716-446655440002",
                 "message": "Archivo cargado exitosamente",
             }
         }

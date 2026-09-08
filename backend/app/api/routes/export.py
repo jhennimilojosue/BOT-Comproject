@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ...infrastructure.database.models.case import CaseModel
 from ...infrastructure.database.models.processing import ProcessingModel
+from ...infrastructure.database.models.ai_result import AIResultModel
 from ..dependencies import get_db
 
 router = APIRouter(prefix="/api/v1/processing", tags=["processing"])
@@ -59,6 +60,12 @@ async def export_processing_results(
             CaseModel.upload_id == processing.upload_id
         ).all()
 
+        # Obtener resultados IA asociados al procesamiento
+        ai_results = db.query(AIResultModel).filter(
+            AIResultModel.processing_id == processing_id
+        ).all()
+        ai_by_case = {r.case_code: r for r in ai_results}
+
         # Crear el archivo Excel en memoria
         output = io.BytesIO()
 
@@ -91,6 +98,9 @@ async def export_processing_results(
                 "Fecha Registro",
                 "Descripción",
                 "Solución",
+                "Descripción IA",
+                "Tiempo Estimado (min)",
+                "Tiempo Estimado (horas)",
             ]
 
             for col, header in enumerate(headers, 1):
@@ -102,17 +112,32 @@ async def export_processing_results(
 
             # Datos
             for row, case in enumerate(cases, 2):
-                sheet.cell(row=row, column=1, value=case.case_code).border = thin_border
-                sheet.cell(row=row, column=2, value=case.case_type).border = thin_border
-                sheet.cell(row=row, column=3, value=case.responsible_name).border = thin_border
-                sheet.cell(row=row, column=4, value=case.status).border = thin_border
-                sheet.cell(row=row, column=5, value=case.final_category).border = thin_border
-                sheet.cell(row=row, column=6, value=case.registered_at).border = thin_border
-                sheet.cell(row=row, column=7, value=case.description).border = thin_border
-                sheet.cell(row=row, column=8, value=case.solution).border = thin_border
+                ai = ai_by_case.get(case.case_code)
+                estimated_minutes = ai.estimated_minutes if ai else None
+                estimated_hours = round(estimated_minutes / 60, 2) if estimated_minutes is not None else None
+
+                registered_at = case.registered_at
+                if registered_at is not None and registered_at.tzinfo is not None:
+                    registered_at = registered_at.replace(tzinfo=None)
+
+                values = [
+                    case.case_code,
+                    case.case_type,
+                    case.responsible_name,
+                    case.status,
+                    case.final_category,
+                    registered_at,
+                    case.description,
+                    case.solution,
+                    ai.generated_description if ai else None,
+                    estimated_minutes,
+                    estimated_hours,
+                ]
+                for col, value in enumerate(values, 1):
+                    sheet.cell(row=row, column=col, value=value).border = thin_border
 
             # Ajustar ancho de columnas
-            for col in range(1, 9):
+            for col in range(1, len(headers) + 1):
                 sheet.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 30
 
             # Guardar en memoria

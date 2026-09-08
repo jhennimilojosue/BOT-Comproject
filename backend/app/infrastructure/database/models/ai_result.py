@@ -63,7 +63,22 @@ class AIResultModel(Base):
     case_code: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        comment="Código del caso procesado"
+        comment="C��digo del caso procesado"
+    )
+    case_type: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="Tipo de caso (Incidente/Requerimiento)"
+    )
+    status: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Estado del caso"
+    )
+    final_category: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        comment="Categor��a final del caso"
     )
     estimated_minutes: Mapped[int] = mapped_column(
         Integer,

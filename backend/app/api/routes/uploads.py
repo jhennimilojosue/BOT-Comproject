@@ -20,6 +20,7 @@ from ...infrastructure.exceptions.excel_exceptions import (
     StructureValidationError,
 )
 from ...infrastructure.excel.excel_service import ExcelService
+from ...infrastructure.database.models.processing import ProcessingModel
 from ...infrastructure.repositories.case_repository import SQLAlchemyCaseRepository
 from ...infrastructure.repositories.upload_repository import SQLAlchemyUploadRepository
 from ..dependencies import get_db
@@ -134,8 +135,24 @@ async def create_upload(
         case_repo = SQLAlchemyCaseRepository(db)
         case_repo.save_batch(cases)
 
+        # Crear el Processing del archivo: un único processing_id por upload.
+        # Los resultados de IA de todos los responsables se acumulan bajo él.
+        processing_id = uuid4()
+        processing = ProcessingModel(
+            id=processing_id,
+            upload_id=upload_id,
+            responsible_id=None,
+            responsible_name=None,
+            status="pending",
+            total_cases=len(cases),
+        )
+        db.add(processing)
+        db.commit()
+        db.refresh(processing)
+
         return UploadCreateResponse(
             upload_id=upload_id,
+            processing_id=processing_id,
             message=f"Archivo cargado exitosamente. {len(cases)} casos extraídos.",
         )
 

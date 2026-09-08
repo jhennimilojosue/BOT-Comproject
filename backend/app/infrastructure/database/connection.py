@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from ..support.config import settings
+
 load_dotenv()
 
 
@@ -30,13 +32,10 @@ class DatabaseConfig:
         Inicializa la configuración de la base de datos.
 
         Args:
-            database_url: URL de conexión (opcional, usa variable de entorno si no se proporciona)
+            database_url: URL de conexión (opcional, usa la configuración central si no se proporciona)
         """
         if database_url is None:
-            database_url = os.getenv(
-                "DATABASE_URL",
-                "postgresql://postgres:postgres@localhost:5432/bot_comproject"
-            )
+            database_url = settings.database.url
         self.database_url = database_url
         self._engine = None
         self._SessionLocal = None

@@ -150,18 +150,34 @@ Ejemplo:
 
 # 6. Endpoints V1
 
-La API estará compuesta inicialmente por:
+La API estará compuesta actualmente por los siguientes endpoints (estado real de la implementación):
 
 | Método | Endpoint | Responsabilidad |
 | --- | --- | --- |
-| `GET` | `/responsibles` | Obtener responsables disponibles |
+| `GET` | `/health` | Estado general del sistema |
+| `GET` | `/uploads` | Listar uploads cargados |
 | `POST` | `/uploads` | Cargar Maestro de Casos |
 | `POST` | `/cases/process` | Ejecutar procesamiento |
+| `GET` | `/cases/responsible` | Responsables con conteo de casos |
+| `GET` | `/cases/responsible/{name}` | Casos de un responsable |
 | `GET` | `/processing/{processing_id}` | Consultar ejecución y resultados |
 | `GET` | `/processing/{processing_id}/rejected` | Consultar casos rechazados |
-| `GET` | `/cases` | Consultar casos |
-| `GET` | `/cases/{case_id}` | Consultar un caso |
-| `GET` | `/processing/{processing_id}/export` | Exportar resultados |
+| `GET` | `/processing/{processing_id}/export` | Exportar resultados a Excel (11 columnas, incluye Descripción IA y Tiempo Estimado) |
+| `POST` | `/ai/process-responsible` | Procesar todos los casos en catálogo de un responsable (batch, guarda en BD) |
+| `POST` | `/ai/generate-description` | Generar descripción profesional con IA |
+| `POST` | `/ai/estimate-time` | Estimar tiempo con IA |
+| `GET` | `/ai/catalog` | Consultar el catálogo de tiempos |
+| `POST` | `/ai/catalog/load` | Cargar catálogo de tiempos desde Excel |
+| `GET` | `/ai/results/{processing_id}` | Consultar resultados IA guardados |
+| `GET` | `/ai/health` | Estado del servicio de IA |
+| `POST` | `/ai/test-process` | Prueba de procesamiento IA sin guardar en BD |
+| `WS` | `/ai/ws/{client_id}` | Progreso en tiempo real |
+
+> Nota: el catálogo de tiempos se almacena en la tabla `catalogo_tiempos` de PostgreSQL. Las descripciones de IA persisten en `ai_results` junto con `case_type`, `status` y `final_category` (ver `backend/DATABASE.md`).
+>
+> Nota: `POST /uploads` crea un processing por archivo y devuelve `upload_id` + `processing_id`. Los resultados de IA de todos los responsables se acumulan bajo ese mismo `processing_id`.
+>
+> Stubs no registrados en `main.py`: `GET /responsibles` (`routers/responsibles.py`), `GET /cases` y `GET /cases/{case_id}` (`routers/cases.py`).
 
 ---
 
@@ -906,7 +922,7 @@ Repositories
 
 ### API-04
 
-La IA no estará expuesta directamente mediante un endpoint público para el frontend.
+El frontend no deberá comunicarse directamente con el servidor Ollama; toda interacción con IA se realiza a través de los endpoints `/api/v1/ai/*` del backend.
 
 ### API-05
 

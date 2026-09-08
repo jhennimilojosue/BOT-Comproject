@@ -100,7 +100,7 @@ class GetResultsResponse(BaseModel):
     """Schema de respuesta para obtener resultados guardados."""
 
     processing_id: UUID = Field(..., description="ID del procesamiento")
-    responsible_name: str = Field(..., description="Nombre del responsable")
+    responsible_name: Optional[str] = Field(None, description="Nombre del responsable (nivel archivo: puede ser nulo)")
     total_results: int = Field(..., description="Total de resultados")
     results: List[AIResultResponse] = Field(..., description="Lista de resultados")
     summary: ProcessingSummary = Field(..., description="Resumen")

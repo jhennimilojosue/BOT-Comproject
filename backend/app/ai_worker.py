@@ -107,6 +107,9 @@ def run(processing_id: str, case_ids: list):
                         model_name=config.model,
                         tokens_used=tokens_used,
                         latency_ms=latency_ms,
+                        case_type=case.case_type,
+                        status=case.status,
+                        final_category=case.final_category,
                     )
                     results_count += 1
                     print(f"[WORKER] OK: '{generated_description[:60]}...' ({latency_ms:.0f}ms)", flush=True)

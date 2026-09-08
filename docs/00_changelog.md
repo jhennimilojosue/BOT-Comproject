@@ -202,3 +202,64 @@ Registro de correcciones realizadas en la documentación del proyecto BOT-COMPro
 8. `docs/04_modulos/ia_service/ia_service.md`
 9. `docs/04_modulos/gestion_casos/gestion_casos.md`
 10. `docs/00_changelog.md`
+
+---
+
+## [2026-09-04] Actualización documental post-implementación (Parte 1 + Parte 2 IA)
+
+Ronda de actualización de la documentación para reflejar el estado **real** de la implementación (código, endpoints, modelo de IA, base de datos y configuración).
+
+### Cambios de contexto/arquitectura
+- **`README.md` (raíz)**: documento actualizado por completo con el estado real del proyecto.
+- **`00_prompt_desarrolladores.md`**: actualizado stack tecnológico, modelo de IA, configuración de `AIConfig`, lista de endpoints y reglas.
+
+### Modelo de IA (Parte 2)
+- **Modelo configurado:** `qwen2.5-coder:3b` (instalado vía `ollama pull`, funcionando en localhost:11434).
+- Actualizado en: `04_modulos/ia_service/ia_service.md` (tabla de parámetros y ejemplo), `00_prompt_desarrolladores.md` (sección de configuración y stack), `00_fase0_alineacion_contratos.md` (criterio de aceptación "Ollama funcionando").
+- Motivo: `qwen2.5:latest` / `qwen2.5-coder:latest` no existen localmente y las pruebas reales se ejecutaron con `qwen2.5-coder:3b`.
+
+### Variables de entorno
+- `docs/03_desarrollo/01_estructura_y_convenciones.md`: variables actualizadas.
+  - `OLLAMA_URL` → `OLLAMA_BASE_URL`.
+  - `ENVIRONMENT`, `LOG_LEVEL` → `APP_ENV`, `APP_DEBUG`.
+  - Se documenta el nombre real de la base de datos: `botcomproject`.
+
+### Contratos de API y base de datos
+- `docs/08_api/contratos_api.md`: inventario de endpoints actualizado con los reales:
+  - `/health`, `/api/v1/uploads`, `/api/v1/cases/process`, `/api/v1/cases/responsible`, `/api/v1/processing/{id}`, `/api/v1/processing/{id}/rejected`, `/api/v1/processing/{id}/export`.
+  - `/api/v1/ai/process-responsible`, `/api/v1/ai/generate-description`, `/api/v1/ai/estimate-time`, `/api/v1/ai/catalog`, `/api/v1/ai/catalog/load`, `/api/v1/ai/results/{processing_id}`, `/api/v1/ai/health`, WebSocket `/api/v1/ai/ws/{client_id}`.
+  - `ai_results` ahora persiste `case_type`, `status`, `final_category`; el catálogo de tiempos vive en la tabla `catalogo_tiempos`.
+  - El export a Excel incluye columnas de IA: `Descripción IA`, `Tiempo Estimado (min)`, `Tiempo Estimado (horas)`.
+- `backend/DATABASE.md`: agregadas tablas `catalogo_tiempos` y `ai_results` (con campos reales).
+
+### Archivos modificados (8):
+1. `README.md` (raíz)
+2. `docs/00_changelog.md`
+3. `docs/00_prompt_desarrolladores.md`
+4. `docs/00_fase0_alineacion_contratos.md`
+5. `docs/03_desarrollo/01_estructura_y_convenciones.md`
+6. `docs/08_api/contratos_api.md`
+7. `docs/04_modulos/ia_service/ia_service.md`
+8. `backend/DATABASE.md`
+
+---
+
+## [2026-09-04] Processing por archivo (parte del procesamiento de casos)
+
+### Cambio de modelo de datos operativo
+- **Un `processing_id` por archivo:** `POST /api/v1/uploads` ahora crea el `ProcessingModel` del archivo (status `pending`, `total_cases`) y devuelve `upload_id` + `processing_id` (antes solo `upload_id`).
+- `POST /api/v1/ai/process-responsible` reutiliza el processing del archivo (ya no crea uno nuevo) y **acumula** los resultados de todos los responsables bajo ese mismo `processing_id`. Solo procesa los casos del responsable indicado.
+- Se fijan `started_at` / `completed_at` en el processing (antes nunca se llenaban).
+- `GET /api/v1/ai/results/{processing_id}`: `responsible_name` ahora es opcional (el processing es a nivel archivo).
+
+### Herramienta de limpieza
+- Nuevo script `backend/scripts/clear_uploads.py`: elimina `ai_results`, `estimations`, `processing_rejections`, `processings`, `cases`, `uploads` y **conserva** `catalogo_tiempos`.
+- Se ejecutó para limpiar los datos de prueba existentes (14 uploads, 9 842 casos, 22 processings, 97 resultados).
+
+### Archivos modificados:
+1. `backend/app/api/routes/uploads.py`
+2. `backend/app/api/schemas/upload.py`
+3. `backend/app/api/routes/ai.py`
+4. `backend/app/api/schemas/ai.py`
+5. `backend/scripts/clear_uploads.py` (nuevo)
+6. `README.md`

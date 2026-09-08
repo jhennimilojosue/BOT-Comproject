@@ -8,7 +8,7 @@ class TestAIConfig:
     def test_should_use_default_values_when_not_provided(self):
         config = AIConfig()
 
-        assert config.model == "qwen2.5:latest"
+        assert config.model == "qwen2.5-coder:3b"
         assert config.temperature == 0.3
         assert config.timeout == 60
         assert config.max_tokens == 500

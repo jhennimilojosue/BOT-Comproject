@@ -32,6 +32,9 @@ class SQLAlchemyAIResultRepository:
         model_name: str,
         tokens_used: int = 0,
         latency_ms: float = 0.0,
+        case_type: Optional[str] = None,
+        status: Optional[str] = None,
+        final_category: Optional[str] = None,
     ) -> AIResultModel:
         """
         Guarda un resultado de IA.
@@ -45,6 +48,9 @@ class SQLAlchemyAIResultRepository:
             model_name: Nombre del modelo utilizado
             tokens_used: Tokens utilizados
             latency_ms: Latencia en milisegundos
+            case_type: Tipo de caso (Incidente/Requerimiento)
+            status: Estado del caso
+            final_category: Categoría final del caso
 
         Returns:
             Modelo guardado
@@ -58,6 +64,9 @@ class SQLAlchemyAIResultRepository:
             model_name=model_name,
             tokens_used=tokens_used,
             latency_ms=latency_ms,
+            case_type=case_type,
+            status=status,
+            final_category=final_category,
         )
         self._session.add(ai_result)
         self._session.flush()
@@ -84,6 +93,9 @@ class SQLAlchemyAIResultRepository:
                 model_name=data["model_name"],
                 tokens_used=data.get("tokens_used", 0),
                 latency_ms=data.get("latency_ms", 0.0),
+                case_type=data.get("case_type"),
+                status=data.get("status"),
+                final_category=data.get("final_category"),
             )
             self._session.add(ai_result)
             saved.append(ai_result)

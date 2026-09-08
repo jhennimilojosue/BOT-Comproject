@@ -230,7 +230,7 @@ class AIProvider(ABC):
 
 @dataclass
 class AIConfig:
-    model: str = "qwen2.5:latest"
+    model: str = "qwen2.5-coder:3b"
     temperature: float = 0.3
     timeout: int = 60
     max_tokens: int = 500
@@ -445,7 +445,7 @@ Al final del Día 2, los 3 desarrolladores deben tener:
 | 3 | Repositorio creado | Dev 3 | Accesible por los 3 |
 | 4 | Branches configurados | Dev 3 | Cada dev tiene su branch |
 | 5 | docker-compose.yml | Dev 1 | PostgreSQL funciona |
-| 6 | Ollama funcionando | Dev 3 | Modelo qwen2.5:latest descargado |
+| 6 | Ollama funcionando | Dev 3 | Modelo `qwen2.5-coder:3b` descargado y respondiendo |
 | 7 | requirements.txt básico | Dev 1 | Pip install funciona |
 | 8 | .env.example | Dev 1 | Variables documentadas |
 

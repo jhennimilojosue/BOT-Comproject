@@ -938,11 +938,14 @@ Variables potenciales:
 
 ```
 DATABASE_URL
-OLLAMA_URL
+OLLAMA_BASE_URL
 OLLAMA_MODEL
-ENVIRONMENT
-LOG_LEVEL
+OLLAMA_TIMEOUT
+APP_ENV
+APP_DEBUG
 ```
+
+> Nota: el nombre real de la base de datos es `botcomproject` (ver `backend/.env.example`).
 
 El archivo `.env` real no deberá almacenarse en Git.
 
