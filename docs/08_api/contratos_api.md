@@ -177,6 +177,8 @@ La API estará compuesta actualmente por los siguientes endpoints (estado real d
 >
 > Nota: `POST /uploads` crea un processing por archivo y devuelve `upload_id` + `processing_id`. Los resultados de IA de todos los responsables se acumulan bajo ese mismo `processing_id`.
 >
+> Nota: los resultados de IA (`GET /ai/results/{processing_id}` y la respuesta de `POST /ai/process-responsible`) incluyen el campo `area` y `fecha_solucion` por resultado, el resumen `summary.by_area` (desglose `{ area: {count, hours} }`) y `results_by_area` con la estructura `{ área: { total_hours, by_date: { 'YYYY-MM-DD': { total_hours, cases: [resultado, ...] } }, sin_fecha: { total_hours, cases: [...] } } }` (los casos por área/por fecha de solución; casos sin área van a `Sin área` y sin fecha a `sin_fecha`).
+>
 > Stubs no registrados en `main.py`: `GET /responsibles` (`routers/responsibles.py`), `GET /cases` y `GET /cases/{case_id}` (`routers/cases.py`).
 
 ---

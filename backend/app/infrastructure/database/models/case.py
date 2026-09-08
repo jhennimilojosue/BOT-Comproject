@@ -31,6 +31,7 @@ class CaseModel(Base):
         responsible_name: Nombre del responsable original en Aranda
         responsible_id: Referencia al catálogo de responsables
         user_name: Nombre del usuario asociado al caso
+        area: Área asociada al caso en Aranda
         project: Proyecto asociado al caso
         registered_at: Fecha de registro del caso en el sistema origen
         status: Estado original del caso en Aranda
@@ -84,6 +85,11 @@ class CaseModel(Base):
         nullable=True,
         comment="Nombre del usuario asociado al caso"
     )
+    area: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        comment="Área asociada al caso en Aranda"
+    )
     project: Mapped[str] = mapped_column(
         String(200),
         nullable=False,
@@ -113,6 +119,11 @@ class CaseModel(Base):
         Text,
         nullable=False,
         comment="Solución registrada en Aranda"
+    )
+    fecha_solucion: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Fecha de solución del caso en el sistema origen"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

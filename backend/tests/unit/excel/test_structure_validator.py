@@ -144,7 +144,7 @@ class TestStructureValidator:
         columns = self.validator.get_all_expected_columns()
 
         # Assert
-        assert len(columns) == 9  # 8 required + 1 optional
+        assert len(columns) == 11  # 8 required + 3 optional
         assert "Codigo Caso" in columns
         assert "Usuario" in columns
 

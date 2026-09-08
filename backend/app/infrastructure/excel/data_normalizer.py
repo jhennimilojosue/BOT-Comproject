@@ -38,6 +38,7 @@ class DataNormalizer:
     ]
 
     DATE_FIELD = "registered_at"
+    DATE_FIELDS = {DATE_FIELD, "fecha_solucion"}
 
     def normalize(
         self, records: List[Dict[str, Optional[str]]]
@@ -80,8 +81,8 @@ class DataNormalizer:
         for field, value in record.items():
             if value is None:
                 normalized[field] = None
-            elif field == self.DATE_FIELD:
-                normalized[field] = self._normalize_date(value, row_index)
+            elif field in self.DATE_FIELDS:
+                normalized[field] = self._normalize_date(field, value, row_index)
             else:
                 normalized[field] = self._normalize_text(value)
 
@@ -102,7 +103,7 @@ class DataNormalizer:
         """
         return " ".join(value.split())
 
-    def _normalize_date(self, value: str, row_index: int) -> str:
+    def _normalize_date(self, field: str, value: str, row_index: int) -> str:
         """
         Normaliza una fecha al formato ISO 8601 (YYYY-MM-DD).
 
@@ -112,6 +113,7 @@ class DataNormalizer:
         3. MM/DD/YYYY
 
         Args:
+            field: Campo interno de la fecha (para trazabilidad de errores)
             value: Fecha cruda como texto
             row_index: Índice del registro para trazabilidad
 
@@ -131,7 +133,7 @@ class DataNormalizer:
                 continue
 
         raise InvalidDataFormatError(
-            field=self.DATE_FIELD,
+            field=field,
             value=value,
             expected_format="YYYY-MM-DD, DD/MM/YYYY o MM/DD/YYYY",
         )

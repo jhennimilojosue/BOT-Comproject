@@ -26,6 +26,7 @@ class ExcelCaseDTO(BaseModel):
     case_type: Optional[str] = Field(default=None, max_length=50)
     responsible_name: str = Field(..., min_length=1, max_length=200)
     user_name: Optional[str] = Field(default=None, max_length=200)
+    area: Optional[str] = Field(default=None, max_length=200)
     project: Optional[str] = Field(default=None, max_length=200)
     registered_at: str = Field(
         ...,
@@ -35,6 +36,10 @@ class ExcelCaseDTO(BaseModel):
     final_category: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(default=None)
     solution: Optional[str] = Field(default=None)
+    fecha_solucion: Optional[str] = Field(
+        default=None,
+        description="Fecha de solución en formato ISO 8601: YYYY-MM-DD",
+    )
 
 
 class CaseMapper:

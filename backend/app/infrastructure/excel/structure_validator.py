@@ -42,6 +42,8 @@ class StructureValidator:
     # Columnas opcionales
     OPTIONAL_COLUMNS = {
         "Usuario",
+        "Area",
+        "Fecha de Soluci\u00f3n",
     }
 
     # Mapa de normalización para caracteres especiales corrupted

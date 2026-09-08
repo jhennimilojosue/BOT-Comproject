@@ -36,6 +36,8 @@ class ColumnMapper:
         "Descripci\u00f3n": "description",
         "Solucion": "solution",
         "Usuario": "user_name",
+        "Area": "area",
+        "Fecha de Soluci\u00f3n": "fecha_solucion",
     }
 
     REQUIRED_FIELDS = {

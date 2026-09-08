@@ -11,7 +11,7 @@ import uuid
 from typing import List, Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ..database.models.ai_result import AIResultModel
 
@@ -114,7 +114,7 @@ class SQLAlchemyAIResultRepository:
         """
         stmt = select(AIResultModel).where(
             AIResultModel.processing_id == processing_id
-        )
+        ).options(joinedload(AIResultModel.case))
         return list(self._session.execute(stmt).scalars().all())
 
     def find_by_case(self, case_id: uuid.UUID) -> Optional[AIResultModel]:

@@ -122,12 +122,14 @@ async def create_upload(
                 case_type=normalize_case_type(excel_case.case_type),
                 responsible_name=excel_case.responsible_name,
                 user_name=excel_case.user_name,
+                area=excel_case.area,
                 project=excel_case.project or "COMProject",  # Valor por defecto si no existe en Excel
                 registered_at=excel_case.registered_at,
                 status=excel_case.status,
                 final_category=excel_case.final_category,
                 description=excel_case.description or "Sin descripción",
                 solution=excel_case.solution or "Sin solución",
+                fecha_solucion=excel_case.fecha_solucion,
             )
             cases.append(case)
 

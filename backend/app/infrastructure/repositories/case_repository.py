@@ -49,12 +49,14 @@ class SQLAlchemyCaseRepository(CaseRepository):
             responsible_name=case.responsible_name,
             responsible_id=case.responsible_id,
             user_name=case.user_name,
+            area=case.area,
             project=case.project,
             registered_at=case.registered_at,
             status=case.status,
             final_category=case.final_category,
             description=case.description,
             solution=case.solution,
+            fecha_solucion=case.fecha_solucion,
             created_at=case.created_at,
         )
         self.session.add(model)
@@ -76,12 +78,14 @@ class SQLAlchemyCaseRepository(CaseRepository):
                 responsible_name=case.responsible_name,
                 responsible_id=case.responsible_id,
                 user_name=case.user_name,
+                area=case.area,
                 project=case.project,
                 registered_at=case.registered_at,
                 status=case.status,
                 final_category=case.final_category,
                 description=case.description,
                 solution=case.solution,
+                fecha_solucion=case.fecha_solucion,
                 created_at=case.created_at,
             )
             for case in cases
@@ -182,12 +186,14 @@ class SQLAlchemyCaseRepository(CaseRepository):
             model.responsible_name = case.responsible_name
             model.responsible_id = case.responsible_id
             model.user_name = case.user_name
+            model.area = case.area
             model.project = case.project
             model.registered_at = case.registered_at
             model.status = case.status
             model.final_category = case.final_category
             model.description = case.description
             model.solution = case.solution
+            model.fecha_solucion = case.fecha_solucion
             self.session.commit()
 
     def _to_entity(self, model: CaseModel) -> Case:
@@ -208,11 +214,13 @@ class SQLAlchemyCaseRepository(CaseRepository):
             responsible_name=model.responsible_name,
             responsible_id=model.responsible_id,
             user_name=model.user_name,
+            area=model.area,
             project=model.project,
             registered_at=model.registered_at,
             status=model.status,
             final_category=model.final_category,
             description=model.description,
             solution=model.solution,
+            fecha_solucion=model.fecha_solucion,
             created_at=model.created_at,
         )

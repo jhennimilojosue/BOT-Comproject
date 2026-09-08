@@ -40,6 +40,7 @@ class Case(BaseModel):
         responsible_name: Nombre del responsable original en Aranda
         responsible_id: Referencia al catálogo de responsables (opcional)
         user_name: Nombre del usuario asociado al caso (opcional)
+        area: Área asociada al caso (opcional)
         project: Proyecto asociado al caso
         registered_at: Fecha de registro del caso en el sistema origen
         status: Estado original del caso en Aranda
@@ -82,6 +83,11 @@ class Case(BaseModel):
         max_length=200,
         description="Nombre del usuario asociado al caso"
     )
+    area: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Área asociada al caso"
+    )
     project: str = Field(
         ...,
         min_length=1,
@@ -113,6 +119,10 @@ class Case(BaseModel):
         ...,
         min_length=1,
         description="Solución registrada en Aranda"
+    )
+    fecha_solucion: Optional[datetime] = Field(
+        default=None,
+        description="Fecha de solución del caso en Aranda"
     )
     created_at: datetime = Field(
         default_factory=datetime.utcnow,

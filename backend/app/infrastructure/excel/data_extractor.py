@@ -29,12 +29,14 @@ class DataExtractor:
         "case_type",
         "responsible_name",
         "user_name",
+        "area",
         "project",
         "registered_at",
         "status",
         "final_category",
         "description",
         "solution",
+        "fecha_solucion",
     ]
 
     def extract(self, df: pd.DataFrame) -> List[Dict[str, Optional[str]]]:

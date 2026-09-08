@@ -141,13 +141,15 @@ class TestColumnMapper:
         # Assert
         assert unrecognized == []
 
-    def test_official_mapping_contains_nine_columns(self):
-        """Test: El mapeo oficial debe contener 9 columnas (8 requeridas + 1 opcional)."""
+    def test_official_mapping_contains_eleven_columns(self):
+        """Test: El mapeo oficial debe contener 11 columnas (8 requeridas + 3 opcionales)."""
         # Act
         mapping = self.mapper.official_mapping
 
         # Assert
-        assert len(mapping) == 9
+        assert len(mapping) == 11
+        assert mapping["Area"] == "area"
+        assert mapping["Fecha de Solución"] == "fecha_solucion"
 
 
 class TestMapExcelColumns:

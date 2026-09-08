@@ -93,6 +93,22 @@ Case 1 ──── N Estimation
 Case 1 ──── N AIResult
 ```
 
+### `cases` fields (resumen)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `case_code` | String(50) | Codigo Caso (Aranda) |
+| `case_type` | String(20) | `Incidente` / `Requerimiento` |
+| `responsible_name` | String(200) | Responsable en Aranda |
+| `user_name` | String(200), nullable | Usuario del caso (columna `Usuario`) |
+| `area` | String(200), nullable | Área del caso (columna `Area`) |
+| `project` | String(200) | Proyecto (default `COMProject` si no existe en Excel) |
+| `registered_at` | DateTime(timezone) | Fecha de registro |
+| `status` | String(100) | Estado del caso |
+| `final_category` | String(200) | Categoría final |
+| `description` / `solution` | Text | Descripción y solución originales |
+| `fecha_solucion` | DateTime(timezone), nullable | Fecha de solución del caso (columna `Fecha de Solución`) |
+
 ### `ai_results` fields
 
 | Column | Type | Description |
@@ -111,7 +127,7 @@ Case 1 ──── N AIResult
 | `latency_ms` | Float | Latencia de la respuesta (ms) |
 | `created_at` | DateTime(timezone) | Fecha de creación (UTC) |
 
-Migrations are applied with Alembic from `backend/alembic/versions/` (currently up to revision `005`).
+Migrations are applied with Alembic from `backend/alembic/versions/` (currently up to revision `007`).
 
 ## Common Commands
 

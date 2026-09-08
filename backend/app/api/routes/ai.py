@@ -49,6 +49,45 @@ parser = ResponseParser()
 # WebSocket manager global
 ws_manager = ConnectionManager()
 
+# Estados procesables según catálogo V1 (status_catalog.py): Solucionado y Cerrado
+from ...infrastructure.catalogs.status_catalog import StatusCatalog
+
+PROCESSABLE_STATUSES = StatusCatalog().get_all_processable()
+
+
+def _format_fecha(dt):
+    """Formatea una fecha de solución a YYYY-MM-DD (o None)."""
+    if dt is None:
+        return None
+    return dt.strftime("%Y-%m-%d") if hasattr(dt, "strftime") else str(dt)
+
+
+def _group_results_by_area(results):
+    """Agrupa resultados de IA por área y por fecha de solución.
+
+    Estructura: { área: { total_hours, by_date: { 'YYYY-MM-DD': { total_hours, cases: [...] } },
+                          sin_fecha: { total_hours, cases: [...] } } }
+    Los casos sin área van a 'Sin área' y los sin fecha a 'sin_fecha'.
+    """
+    grouped = {}
+    for r in results:
+        key = r.area or "Sin área"
+        area_group = grouped.setdefault(
+            key, {"total_hours": 0.0, "by_date": {}, "sin_fecha": {"total_hours": 0.0, "cases": []}}
+        )
+        hours = r.estimated_minutes / 60
+        area_group["total_hours"] += hours
+        if r.fecha_solucion:
+            date_group = area_group["by_date"].setdefault(
+                r.fecha_solucion, {"total_hours": 0.0, "cases": []}
+            )
+            date_group["total_hours"] += hours
+            date_group["cases"].append(r)
+        else:
+            area_group["sin_fecha"]["total_hours"] += hours
+            area_group["sin_fecha"]["cases"].append(r)
+    return grouped
+
 
 # ============================================================================
 # WEBSOCKET ENDPOINT
@@ -101,12 +140,13 @@ def process_responsible(
                 CaseModel.upload_id == request.upload_id,
                 CaseModel.responsible_name == request.responsible_name,
                 CaseModel.case_type.in_(["Incidente", "Requerimiento"]),
+                CaseModel.status.in_(PROCESSABLE_STATUSES),
             )
             .all()
         )
 
         if not cases:
-            raise HTTPException(status_code=404, detail={"error": "NO_CASES_FOUND", "message": f"No se encontraron casos para '{request.responsible_name}'"})
+            raise HTTPException(status_code=404, detail={"error": "NO_CASES_FOUND", "message": f"No se encontraron casos procesables (estados {','.join(PROCESSABLE_STATUSES)}) para '{request.responsible_name}'"})
 
         processable_cases = [c for c in cases if catalog_repo.find_by_path(c.final_category)]
 
@@ -199,6 +239,8 @@ def process_responsible(
                         final_category=case.final_category,
                         status=case.status,
                         case_type=case.case_type,
+                        area=case.area,
+                        fecha_solucion=_format_fecha(case.fecha_solucion),
                         generated_description=generated_description,
                         estimated_minutes=estimated_minutes,
                         model_name=config.model,
@@ -222,18 +264,26 @@ def process_responsible(
 
         by_type = defaultdict(lambda: {"count": 0, "hours": 0})
         by_category = defaultdict(lambda: {"count": 0, "hours": 0})
+        by_area = defaultdict(lambda: {"count": 0, "hours": 0})
         for r in results:
             by_type[r.case_type]["count"] += 1
             by_type[r.case_type]["hours"] += r.estimated_minutes / 60
             cat_short = r.final_category.split(".")[-1] if "." in r.final_category else r.final_category
             by_category[cat_short]["count"] += 1
             by_category[cat_short]["hours"] += r.estimated_minutes / 60
+            if r.area:
+                by_area[r.area]["count"] += 1
+                by_area[r.area]["hours"] += r.estimated_minutes / 60
+            else:
+                by_area["Sin área"]["count"] += 1
+                by_area["Sin área"]["hours"] += r.estimated_minutes / 60
 
         summary = ProcessingSummary(
             total_hours=round(total_hours, 2),
             avg_minutes=round(avg_minutes, 2),
             by_type=dict(by_type),
             by_category=dict(by_category),
+            by_area=dict(by_area),
         )
 
         return ProcessResponsibleResponse(
@@ -244,6 +294,7 @@ def process_responsible(
             processed=results_count,
             rejected=rejected,
             results=results,
+            results_by_area=_group_results_by_area(results),
             summary=summary,
         )
 
@@ -419,6 +470,8 @@ async def get_results(
                     final_category=r.final_category or "",
                     status=r.status or "",
                     case_type=r.case_type or "",
+                    area=r.case.area if r.case else None,
+                    fecha_solucion=_format_fecha(r.case.fecha_solucion) if r.case else None,
                     generated_description=r.generated_description,
                     estimated_minutes=r.estimated_minutes,
                     model_name=r.model_name,
@@ -435,6 +488,7 @@ async def get_results(
         from collections import defaultdict
         by_type = defaultdict(lambda: {"count": 0, "hours": 0})
         by_category = defaultdict(lambda: {"count": 0, "hours": 0})
+        by_area = defaultdict(lambda: {"count": 0, "hours": 0})
         for r in results:
             if r.case_type:
                 by_type[r.case_type]["count"] += 1
@@ -443,12 +497,19 @@ async def get_results(
                 cat_short = r.final_category.split(".")[-1] if "." in r.final_category else r.final_category
                 by_category[cat_short]["count"] += 1
                 by_category[cat_short]["hours"] += r.estimated_minutes / 60
+            if r.area:
+                by_area[r.area]["count"] += 1
+                by_area[r.area]["hours"] += r.estimated_minutes / 60
+            else:
+                by_area["Sin área"]["count"] += 1
+                by_area["Sin área"]["hours"] += r.estimated_minutes / 60
 
         summary = ProcessingSummary(
             total_hours=round(total_hours, 2),
             avg_minutes=round(avg_minutes, 2),
             by_type=dict(by_type),
             by_category=dict(by_category),
+            by_area=dict(by_area),
         )
 
         return GetResultsResponse(
@@ -456,6 +517,7 @@ async def get_results(
             responsible_name=processing.responsible_name or "",
             total_results=len(results),
             results=results,
+            results_by_area=_group_results_by_area(results),
             summary=summary,
         )
 
@@ -726,6 +788,7 @@ def test_process_ai(
             CaseModel.upload_id == request.upload_id,
             CaseModel.responsible_name == request.responsible_name,
             CaseModel.case_type.in_(["Incidente", "Requerimiento"]),
+            CaseModel.status.in_(PROCESSABLE_STATUSES),
         )
         .limit(request.max_cases)
         .all()

@@ -4,6 +4,28 @@ Registro de correcciones realizadas en la documentación del proyecto BOT-COMPro
 
 ---
 
+## [2026-09-08] División de horas por área y fecha de solución
+
+- `POST /api/v1/ai/process-responsible` y `GET /api/v1/ai/results/{processing_id}` retornan en `results_by_area`:
+  `{ área: { total_hours, by_date: { 'YYYY-MM-DD': { total_hours, cases: [AIResultResponse, ...] } }, sin_fecha: { total_hours, cases: [...] } } }`.
+- Cada `AIResultResponse` incluye el campo `fecha_solucion` (YYYY-MM-DD) del caso.
+- Nuevo campo `fecha_solucion` en el pipeline del Excel (columna `Fecha de Solución`) y en la tabla `cases`
+  (migración alembic `007`, columna `fecha_solucion TIMESTAMP`).
+- Archivos: `column_mapper.py`, `structure_validator.py`, `data_extractor.py`, `data_normalizer.py`,
+  `case_mapper.py`, `domain/entities/case.py`, `database/models/case.py`, `case_repository.py`,
+  `uploads.py`, `api/schemas/ai.py`, `api/routes/ai.py`, `alembic/versions/007_add_fecha_solucion_to_cases.py`.
+
+---
+
+## [2026-09-08] Filtro de estados procesables en el módulo IA
+
+- `POST /api/v1/ai/process-responsible` y `GET/POST test-process` solo generan descripción IA para casos con estado **Cerrado** o **Solucionado**.
+- Fuente de verdad: catálogo de estados V1 (`backend/app/infrastructure/catalogs/status_catalog.py`, `PROCESSABLE_STATUSES`).
+- Se eliminaron los resultados IA históricos de estados no procesables y se recalculó `processed_cases` de los processings afectados.
+- Archivos modificados: `backend/app/api/routes/ai.py`, `docs/00_changelog.md` (este registro).
+
+---
+
 ## [2026-08-19] Corrección de inconsistencias documentales
 
 ### Unificación de nombre del servicio de catálogos
@@ -263,3 +285,35 @@ Ronda de actualización de la documentación para reflejar el estado **real** de
 4. `backend/app/api/schemas/ai.py`
 5. `backend/scripts/clear_uploads.py` (nuevo)
 6. `README.md`
+
+---
+
+## [2026-09-07] Agrupación de resultados por Área (API)
+
+### Cambio
+- Se mapea la columna **`Area`** del Maestro de Casos (opcional) a un nuevo campo `area`.
+- Cada resultado de IA (`AIResultResponse`) ahora incluye `area` (obtenido del caso vía el join existente `ai_results.case`).
+- `ProcessingSummary` ahora incluye **`by_area`**: dict `{ area: {count, hours} }` (casos sin área van a `Sin área`).
+- Las respuestas incluyen **`results_by_area`**: dict `{ área: [AIResultResponse, ...] }` con todos los casos de cada área.
+- Aplica a `GET /api/v1/ai/results/{processing_id}` y a la respuesta de `POST /api/v1/ai/process-responsible`.
+- **Solo API:** el export a Excel no cambia (los resultados se mostrarán en el frontend).
+
+### Persistencia
+- `CaseModel` ganó la columna `area` (String(200), nullable) — migración Alembic `006_add_area_to_cases`.
+- La entidad de dominio `Case` y el `SQLAlchemyCaseRepository` (save/save_batch/update/_to_entity) ahora manejan `area`.
+- El pipeline de Excel mapea `Area` en `ColumnMapper`, `StructureValidator` (opcional), `DataExtractor` y `ExcelCaseDTO`.
+
+### Archivos modificados:
+1. `backend/app/infrastructure/excel/column_mapper.py`
+2. `backend/app/infrastructure/excel/structure_validator.py`
+3. `backend/app/infrastructure/excel/data_extractor.py`
+4. `backend/app/infrastructure/excel/case_mapper.py`
+5. `backend/app/domain/entities/case.py`
+6. `backend/app/infrastructure/repositories/case_repository.py`
+7. `backend/app/infrastructure/database/models/case.py`
+8. `backend/alembic/versions/006_add_area_to_cases.py` (nuevo)
+9. `backend/app/api/routes/uploads.py`
+10. `backend/app/api/schemas/ai.py`
+11. `backend/app/api/routes/ai.py`
+12. `backend/app/infrastructure/repositories/ai_result_repository.py` (joinedload de `case`)
+13. `backend/tests/unit/excel/test_column_mapper.py`

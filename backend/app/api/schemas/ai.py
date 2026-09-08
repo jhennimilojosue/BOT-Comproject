@@ -39,6 +39,10 @@ class AIResultResponse(BaseModel):
     final_category: str = Field(..., description="Categoría del caso")
     status: str = Field(..., description="Estado del caso")
     case_type: str = Field(..., description="Tipo (Incidente/Requerimiento)")
+    area: Optional[str] = Field(None, description="Área del caso")
+    fecha_solucion: Optional[str] = Field(
+        None, description="Fecha de solución del caso (YYYY-MM-DD)"
+    )
     generated_description: str = Field(..., description="Descripción generada por IA")
     estimated_minutes: int = Field(..., description="Tiempo estimado en minutos")
     model_name: str = Field(..., description="Modelo de IA utilizado")
@@ -53,6 +57,7 @@ class ProcessingSummary(BaseModel):
     avg_minutes: float = Field(..., description="Promedio de minutos por caso")
     by_type: dict = Field(..., description="Desglose por tipo de caso")
     by_category: dict = Field(..., description="Desglose por categoría")
+    by_area: dict = Field(..., description="Desglose por área del caso")
 
 
 class ProcessResponsibleResponse(BaseModel):
@@ -65,6 +70,14 @@ class ProcessResponsibleResponse(BaseModel):
     processed: int = Field(..., description="Casos procesados exitosamente")
     rejected: int = Field(..., description="Casos rechazados")
     results: List[AIResultResponse] = Field(..., description="Resultados individuales")
+    results_by_area: dict = Field(
+        ...,
+        description=(
+            "Resultados agrupados por área y fecha de solución: "
+            "{ área: { total_hours, by_date: { 'YYYY-MM-DD': { total_hours, cases: [AIResultResponse, ...] } }, "
+            "sin_fecha: { total_hours, cases: [...] } } }"
+        ),
+    )
     summary: ProcessingSummary = Field(..., description="Resumen del procesamiento")
 
 
@@ -103,6 +116,14 @@ class GetResultsResponse(BaseModel):
     responsible_name: Optional[str] = Field(None, description="Nombre del responsable (nivel archivo: puede ser nulo)")
     total_results: int = Field(..., description="Total de resultados")
     results: List[AIResultResponse] = Field(..., description="Lista de resultados")
+    results_by_area: dict = Field(
+        ...,
+        description=(
+            "Resultados agrupados por área y fecha de solución: "
+            "{ área: { total_hours, by_date: { 'YYYY-MM-DD': { total_hours, cases: [AIResultResponse, ...] } }, "
+            "sin_fecha: { total_hours, cases: [...] } } }"
+        ),
+    )
     summary: ProcessingSummary = Field(..., description="Resumen")
 
 
