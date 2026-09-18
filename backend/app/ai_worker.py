@@ -44,7 +44,7 @@ def run(processing_id: str, case_ids: list):
 
         processable_cases = []
         for case in cases:
-            if catalog_repo.find_by_path(case.final_category):
+            if catalog_repo.find_by_path(case.final_category, case.case_type):
                 processable_cases.append(case)
 
         print(f"[WORKER] Cases to process: {len(processable_cases)}", flush=True)
@@ -59,7 +59,7 @@ def run(processing_id: str, case_ids: list):
 
         for idx, case in enumerate(processable_cases):
             try:
-                time_range = catalog_repo.get_time_range(case.final_category)
+                time_range = catalog_repo.get_time_range(case.final_category, case.case_type)
                 estimated_minutes = (time_range["min"] + time_range["max"]) // 2
 
                 case_data = {

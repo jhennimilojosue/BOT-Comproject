@@ -12,7 +12,7 @@ Responsabilidades:
 import time
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -28,6 +28,7 @@ from ...api.schemas.ai import (
     ProcessResponsibleResponse,
     ProcessingSummary,
     WebSocketMessage,
+    WeekInfo,
 )
 from ...api.websocket import ConnectionManager
 from ...infrastructure.ai.ai_service import AIService
@@ -148,7 +149,10 @@ def process_responsible(
         if not cases:
             raise HTTPException(status_code=404, detail={"error": "NO_CASES_FOUND", "message": f"No se encontraron casos procesables (estados {','.join(PROCESSABLE_STATUSES)}) para '{request.responsible_name}'"})
 
-        processable_cases = [c for c in cases if catalog_repo.find_by_path(c.final_category)]
+        processable_cases = [
+            c for c in cases
+            if catalog_repo.find_by_path(c.final_category, c.case_type)
+        ]
 
         if not processable_cases:
             raise HTTPException(status_code=404, detail={"error": "NO_CASES_IN_CATALOG", "message": "Ningún caso está en el catálogo de tiempos"})
@@ -185,7 +189,7 @@ def process_responsible(
 
         for idx, case in enumerate(processable_cases):
             try:
-                time_range = catalog_repo.get_time_range(case.final_category)
+                time_range = catalog_repo.get_time_range(case.final_category, case.case_type)
                 estimated_minutes = (time_range["min"] + time_range["max"]) // 2
 
                 case_data = {
@@ -239,6 +243,7 @@ def process_responsible(
                         final_category=case.final_category,
                         status=case.status,
                         case_type=case.case_type,
+                        cliente=case.user_name,
                         area=case.area,
                         fecha_solucion=_format_fecha(case.fecha_solucion),
                         generated_description=generated_description,
@@ -312,7 +317,7 @@ def process_responsible(
 @router.post(
     "/catalog/load",
     summary="Cargar catálogo de tiempos desde Excel",
-    description="Carga las categorías del catálogo de tiempos desde el archivo Excel.",
+    description="Carga las categorías del catálogo de tiempos desde el archivo Excel, leyendo las hojas Requerimientos e Incidentes.",
 )
 async def load_catalog(db: Session = Depends(get_db)):
     """Carga el catálogo de tiempos desde Excel a PostgreSQL."""
@@ -336,45 +341,67 @@ async def load_catalog(db: Session = Depends(get_db)):
         s = s.replace("infrastructura", "infraestructura")
         return s
 
-    df = pd.read_excel(file_path, header=0)
-    df.columns = ["idx", "Categoria", "Subcategoria", "Item", "TiempoMin", "TiempoMax"]
-    df = df.iloc[1:]
-    df = df.dropna(subset=["TiempoMin", "TiempoMax"])
+    def normalize_type(s):
+        s = s.strip().lower()
+        if "incidente" in s:
+            return "Incidente"
+        return "Requerimiento"
 
-    last_cat = None
-    last_sub = None
-    count = 0
+    try:
+        excel_file = pd.ExcelFile(file_path)
+        sheet_names = excel_file.sheet_names
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"error": "EXCEL_READ_ERROR", "message": f"Error al leer el Excel: {str(e)}"})
 
     db.query(CatalogoTiempoModel).delete()
+    count = 0
+    loaded_sheets = []
 
-    for _, row in df.iterrows():
-        cat = str(row["Categoria"]).strip() if pd.notna(row["Categoria"]) else last_cat
-        sub = str(row["Subcategoria"]).strip() if pd.notna(row["Subcategoria"]) else last_sub
-        item = str(row["Item"]).strip() if pd.notna(row["Item"]) else None
-        if pd.notna(row["Categoria"]):
-            last_cat = cat
-        if pd.notna(row["Subcategoria"]):
-            last_sub = sub
+    for sheet_name in sheet_names:
+        case_type = normalize_type(sheet_name)
+        df = pd.read_excel(excel_file, sheet_name=sheet_name, header=0)
+        df.columns = ["idx", "Categoria", "Subcategoria", "Item", "TiempoMin", "TiempoMax"]
+        df = df.iloc[1:]
+        df = df.dropna(subset=["TiempoMin", "TiempoMax"])
 
-        parts = [p for p in [cat, sub, item] if p]
-        path_completo = ".".join(parts)
-        path_normalizado = normalize_path(path_completo)
+        last_cat = None
+        last_sub = None
 
-        record = CatalogoTiempoModel(
-            nivel1=cat,
-            nivel2=sub,
-            nivel3=item,
-            path_completo=path_completo,
-            path_normalizado=path_normalizado,
-            tiempo_min=int(row["TiempoMin"]),
-            tiempo_max=int(row["TiempoMax"]),
-        )
-        db.add(record)
-        count += 1
+        for _, row in df.iterrows():
+            cat = str(row["Categoria"]).strip() if pd.notna(row["Categoria"]) else last_cat
+            sub = str(row["Subcategoria"]).strip() if pd.notna(row["Subcategoria"]) else last_sub
+            item = str(row["Item"]).strip() if pd.notna(row["Item"]) else None
+            if pd.notna(row["Categoria"]):
+                last_cat = cat
+            if pd.notna(row["Subcategoria"]):
+                last_sub = sub
+
+            parts = [p for p in [cat, sub, item] if p]
+            path_completo = ".".join(parts)
+            path_normalizado = normalize_path(path_completo)
+
+            record = CatalogoTiempoModel(
+                case_type=case_type,
+                nivel1=cat,
+                nivel2=sub,
+                nivel3=item,
+                path_completo=path_completo,
+                path_normalizado=path_normalizado,
+                tiempo_min=int(row["TiempoMin"]),
+                tiempo_max=int(row["TiempoMax"]),
+            )
+            db.add(record)
+            count += 1
+
+        loaded_sheets.append(f"{sheet_name} ({len(df)} categorías)")
 
     db.commit()
 
-    return {"message": f"Catálogo cargado: {count} categorías", "total": count}
+    return {
+        "message": f"Catálogo cargado: {count} categorías",
+        "total": count,
+        "sheets": loaded_sheets,
+    }
 
 
 @router.get(
@@ -431,10 +458,22 @@ async def get_catalog(db: Session = Depends(get_db)):
     "/results/{processing_id}",
     response_model=GetResultsResponse,
     summary="Obtener resultados de procesamiento",
-    description="Retorna los resultados guardados de un procesamiento específico.",
+    description=(
+        "Retorna los resultados guardados de un procesamiento específico. "
+        "Opcionalmente filtra por rango de fechas (fecha_inicio/fecha_fin) aplicado "
+        "sobre fecha_solucion del caso, y retorna las semanas disponibles para seleccionar."
+    ),
 )
 async def get_results(
     processing_id: uuid.UUID,
+    fecha_inicio: Optional[str] = Query(
+        None,
+        description="Inicio del rango (YYYY-MM-DD). Filtra por fecha_solucion del caso.",
+    ),
+    fecha_fin: Optional[str] = Query(
+        None,
+        description="Fin del rango (YYYY-MM-DD). Filtra por fecha_solucion del caso.",
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -442,6 +481,8 @@ async def get_results(
 
     Args:
         processing_id: ID del procesamiento
+        fecha_inicio: Fecha de inicio del rango (inclusive)
+        fecha_fin: Fecha de fin del rango (inclusive)
 
     Returns:
         Resultados y resumen
@@ -462,14 +503,49 @@ async def get_results(
         ai_result_repo = SQLAlchemyAIResultRepository(db)
         db_results = ai_result_repo.find_by_processing(processing_id)
 
-        results = []
+        # Validar/parsear rango de fechas
+        range_start = None
+        range_end = None
+        if fecha_inicio:
+            try:
+                range_start = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "INVALID_DATE",
+                        "message": "fecha_inicio debe tener formato YYYY-MM-DD",
+                    },
+                )
+        if fecha_fin:
+            try:
+                range_end = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "INVALID_DATE",
+                        "message": "fecha_fin debe tener formato YYYY-MM-DD",
+                    },
+                )
+        if range_start and range_end and range_start > range_end:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "INVALID_RANGE",
+                    "message": "fecha_inicio no puede ser mayor que fecha_fin",
+                },
+            )
+
+        all_results = []
         for r in db_results:
-            results.append(
+            all_results.append(
                 AIResultResponse(
                     case_code=r.case_code,
                     final_category=r.final_category or "",
                     status=r.status or "",
                     case_type=r.case_type or "",
+                    cliente=r.case.user_name if r.case else None,
                     area=r.case.area if r.case else None,
                     fecha_solucion=_format_fecha(r.case.fecha_solucion) if r.case else None,
                     generated_description=r.generated_description,
@@ -479,6 +555,57 @@ async def get_results(
                     latency_ms=r.latency_ms or 0.0,
                 )
             )
+
+        # Semanas disponibles (derivadas de fecha_solucion)
+        def _week_key(fecha):
+            """Retorna (inicio_lunes, fin_domingo) para una fecha."""
+            iso = fecha.isocalendar()
+            monday = datetime.fromisocalendar(iso.year, iso.week, 1).date()
+            sunday = monday + timedelta(days=6)
+            return monday, sunday
+
+        from collections import defaultdict
+        from datetime import date as _date, timedelta
+
+        weeks = defaultdict(lambda: {"count": 0, "total_minutes": 0})
+        for r in all_results:
+            if r.fecha_solucion:
+                try:
+                    fecha = _date.fromisoformat(r.fecha_solucion)
+                    monday, sunday = _week_key(fecha)
+                    key = f"{monday.isoformat()}|{sunday.isoformat()}"
+                    weeks[key]["count"] += 1
+                    weeks[key]["total_minutes"] += r.estimated_minutes
+                except ValueError:
+                    continue
+
+        semanas_disponibles = [
+            WeekInfo(
+                fecha_inicio=iso_fecha.split("|")[0],
+                fecha_fin=iso_fecha.split("|")[1],
+                count=info["count"],
+                total_hours=round(info["total_minutes"] / 60, 2),
+            )
+            for iso_fecha, info in sorted(weeks.items(), key=lambda x: x[0])
+        ]
+
+        # Aplicar filtro por rango de fechas
+        results = all_results
+        if range_start or range_end:
+            filtered = []
+            for r in all_results:
+                if not r.fecha_solucion:
+                    continue
+                try:
+                    fecha = _date.fromisoformat(r.fecha_solucion)
+                except ValueError:
+                    continue
+                if range_start and fecha < range_start:
+                    continue
+                if range_end and fecha > range_end:
+                    continue
+                filtered.append(r)
+            results = filtered
 
         # Calcular resumen
         total_minutes = sum(r.estimated_minutes for r in results)
@@ -516,6 +643,10 @@ async def get_results(
             processing_id=processing_id,
             responsible_name=processing.responsible_name or "",
             total_results=len(results),
+            total_results_all=len(all_results),
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            semanas_disponibles=semanas_disponibles,
             results=results,
             results_by_area=_group_results_by_area(results),
             summary=summary,
@@ -797,7 +928,7 @@ def test_process_ai(
     if not cases:
         raise HTTPException(status_code=404, detail={"error": "NO_CASES_FOUND"})
 
-    processable_cases = [c for c in cases if catalog_repo.find_by_path(c.final_category)]
+    processable_cases = [c for c in cases if catalog_repo.find_by_path(c.final_category, c.case_type)]
 
     if not processable_cases:
         raise HTTPException(status_code=404, detail={"error": "NO_CASES_IN_CATALOG"})
@@ -811,7 +942,7 @@ def test_process_ai(
 
     for case in processable_cases:
         try:
-            time_range = catalog_repo.get_time_range(case.final_category)
+            time_range = catalog_repo.get_time_range(case.final_category, case.case_type)
             estimated_minutes = (time_range["min"] + time_range["max"]) // 2
 
             case_data = {
@@ -849,6 +980,8 @@ def test_process_ai(
 
             results.append({
                 "case_code": case.case_code,
+                "case_type": case.case_type,
+                "cliente": case.user_name,
                 "final_category": case.final_category,
                 "original_description": case.description,
                 "solution": case.solution,

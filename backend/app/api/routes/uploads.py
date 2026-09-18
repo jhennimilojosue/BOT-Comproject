@@ -123,6 +123,7 @@ async def create_upload(
                 responsible_name=excel_case.responsible_name,
                 user_name=excel_case.user_name,
                 area=excel_case.area,
+                groups=excel_case.groups,
                 project=excel_case.project or "COMProject",  # Valor por defecto si no existe en Excel
                 registered_at=excel_case.registered_at,
                 status=excel_case.status,

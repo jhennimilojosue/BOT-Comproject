@@ -90,6 +90,11 @@ class CaseModel(Base):
         nullable=True,
         comment="Área asociada al caso en Aranda"
     )
+    groups: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        comment="Grupo(s) asociados al caso en Aranda"
+    )
     project: Mapped[str] = mapped_column(
         String(200),
         nullable=False,

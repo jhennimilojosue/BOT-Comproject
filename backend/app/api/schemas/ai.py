@@ -39,6 +39,7 @@ class AIResultResponse(BaseModel):
     final_category: str = Field(..., description="Categoría del caso")
     status: str = Field(..., description="Estado del caso")
     case_type: str = Field(..., description="Tipo (Incidente/Requerimiento)")
+    cliente: Optional[str] = Field(None, description="Cliente del caso (columna Usuario del maestro)")
     area: Optional[str] = Field(None, description="Área del caso")
     fecha_solucion: Optional[str] = Field(
         None, description="Fecha de solución del caso (YYYY-MM-DD)"
@@ -109,12 +110,28 @@ class CatalogResponse(BaseModel):
 # ============================================================================
 
 
+class WeekInfo(BaseModel):
+    """Schema para una semana disponible en los resultados."""
+
+    fecha_inicio: str = Field(..., description="Inicio de la semana (YYYY-MM-DD, lunes)")
+    fecha_fin: str = Field(..., description="Fin de la semana (YYYY-MM-DD, domingo)")
+    count: int = Field(..., description="Total de resultados con fecha_solucion en la semana")
+    total_hours: float = Field(..., description="Total de horas estimadas en la semana")
+
+
 class GetResultsResponse(BaseModel):
     """Schema de respuesta para obtener resultados guardados."""
 
     processing_id: UUID = Field(..., description="ID del procesamiento")
     responsible_name: Optional[str] = Field(None, description="Nombre del responsable (nivel archivo: puede ser nulo)")
-    total_results: int = Field(..., description="Total de resultados")
+    total_results: int = Field(..., description="Total de resultados de la semana seleccionada")
+    total_results_all: int = Field(..., description="Total de resultados sin filtro de semana")
+    fecha_inicio: Optional[str] = Field(None, description="Inicio del rango aplicado (YYYY-MM-DD)")
+    fecha_fin: Optional[str] = Field(None, description="Fin del rango aplicado (YYYY-MM-DD)")
+    semanas_disponibles: List[WeekInfo] = Field(
+        ...,
+        description="Semanas disponibles derivadas de fecha_solucion (para seleccionar en el frontend)",
+    )
     results: List[AIResultResponse] = Field(..., description="Lista de resultados")
     results_by_area: dict = Field(
         ...,

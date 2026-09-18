@@ -88,6 +88,11 @@ class Case(BaseModel):
         max_length=200,
         description="Área asociada al caso"
     )
+    groups: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Grupo(s) asociados al caso en Aranda"
+    )
     project: str = Field(
         ...,
         min_length=1,

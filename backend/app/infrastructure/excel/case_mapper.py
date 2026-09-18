@@ -26,6 +26,7 @@ class ExcelCaseDTO(BaseModel):
     case_type: Optional[str] = Field(default=None, max_length=50)
     responsible_name: str = Field(..., min_length=1, max_length=200)
     user_name: Optional[str] = Field(default=None, max_length=200)
+    groups: Optional[str] = Field(default=None, max_length=200)
     area: Optional[str] = Field(default=None, max_length=200)
     project: Optional[str] = Field(default=None, max_length=200)
     registered_at: str = Field(

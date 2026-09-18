@@ -38,6 +38,7 @@ class ColumnMapper:
         "Usuario": "user_name",
         "Area": "area",
         "Fecha de Soluci\u00f3n": "fecha_solucion",
+        "Grupos": "groups",
     }
 
     REQUIRED_FIELDS = {

@@ -28,15 +28,33 @@ class ResponsibleStats(BaseModel):
     requirements: int = Field(..., description="Casos de tipo Requerimiento")
 
 
-class ResponsibleListResponse(BaseModel):
+class ResponsibleGroup(BaseModel):
     """
-    Respuesta con la lista de responsables y sus estadísticas.
+    Grupo de responsables con sus estadísticas.
 
     Attributes:
-        responsibles: Lista de responsables con estadísticas
+        group: Nombre del grupo
+        total_cases: Total de casos del grupo
+        total_responsibles: Cantidad de responsables en el grupo
+        responsibles: Lista de responsables del grupo
+    """
+    group: str = Field(..., description="Nombre del grupo")
+    total_cases: int = Field(..., description="Total de casos del grupo")
+    total_responsibles: int = Field(..., description="Cantidad de responsables en el grupo")
+    responsibles: List[ResponsibleStats] = Field(..., description="Lista de responsables del grupo")
+
+
+class ResponsibleListResponse(BaseModel):
+    """
+    Respuesta con los responsables agrupados por grupo.
+
+    Attributes:
+        groups: Lista de grupos con sus responsables
+        total_groups: Total de grupos encontrados
         total_responsibles: Total de responsables encontrados
     """
-    responsibles: List[ResponsibleStats] = Field(..., description="Lista de responsables")
+    groups: List[ResponsibleGroup] = Field(..., description="Lista de grupos con sus responsables")
+    total_groups: int = Field(..., description="Total de grupos")
     total_responsibles: int = Field(..., description="Total de responsables")
 
 
@@ -73,6 +91,7 @@ class ResponsibleCasesResponse(BaseModel):
         cases: Lista de casos del responsable
     """
     responsible_name: str = Field(..., description="Nombre del responsable")
+    upload_id: Optional[str] = Field(None, description="ID del upload consultado")
     processing_id: Optional[str] = Field(None, description="ID del último procesamiento")
     stats: ResponsibleStats = Field(..., description="Estadísticas del responsable")
     cases: List[CaseByResponsible] = Field(..., description="Lista de casos")

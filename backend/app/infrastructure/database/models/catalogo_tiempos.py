@@ -37,7 +37,8 @@ class CatalogoTiempoModel(Base):
 
     __tablename__ = "catalogo_tiempos"
     __table_args__ = (
-        Index("ix_catalogo_tiempos_path_normalizado", "path_normalizado", unique=True),
+        Index("ix_catalogo_tiempos_case_type_path", "case_type", "path_normalizado", unique=True),
+        Index("ix_catalogo_tiempos_path_normalizado", "path_normalizado"),
         Index("ix_catalogo_tiempos_nivel1", "nivel1"),
     )
 
@@ -46,6 +47,12 @@ class CatalogoTiempoModel(Base):
         primary_key=True,
         default=uuid.uuid4,
         comment="Identificador único del registro"
+    )
+    case_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="Requerimiento",
+        comment="Tipo de caso (Incidente/Requerimiento)"
     )
     nivel1: Mapped[str] = mapped_column(
         String(200),

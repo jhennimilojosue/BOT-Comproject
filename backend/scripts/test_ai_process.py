@@ -31,30 +31,35 @@ def normalize_text(s: str) -> str:
 
 
 def load_catalog(path: str) -> dict:
-    """Carga catálogo desde Excel, retorna {path_normalizado: (min, max)}."""
-    df = pd.read_excel(path, header=0)
-    df.columns = ["idx", "Categoria", "Subcategoria", "Item", "TiempoMin", "TiempoMax"]
-    df = df.iloc[1:]
-    df = df.dropna(subset=["TiempoMin", "TiempoMax"])
-
+    """Carga catálogo desde Excel (ambas hojas), retorna {(case_type, path_normalizado): (min, max)}."""
+    excel_file = pd.ExcelFile(path)
     catalog = {}
-    last_cat = None
-    last_sub = None
 
-    for _, row in df.iterrows():
-        cat = str(row["Categoria"]).strip() if pd.notna(row["Categoria"]) else last_cat
-        sub = str(row["Subcategoria"]).strip() if pd.notna(row["Subcategoria"]) else last_sub
-        item = str(row["Item"]).strip() if pd.notna(row["Item"]) else None
+    for sheet_name in excel_file.sheet_names:
+        case_type = "Incidente" if "incidente" in sheet_name.strip().lower() else "Requerimiento"
 
-        if pd.notna(row["Categoria"]):
-            last_cat = cat
-        if pd.notna(row["Subcategoria"]):
-            last_sub = sub
+        df = pd.read_excel(excel_file, sheet_name=sheet_name, header=0)
+        df.columns = ["idx", "Categoria", "Subcategoria", "Item", "TiempoMin", "TiempoMax"]
+        df = df.iloc[1:]
+        df = df.dropna(subset=["TiempoMin", "TiempoMax"])
 
-        parts = [p for p in [cat, sub, item] if p]
-        path_completo = ".".join(parts)
-        path_norm = normalize_text(path_completo)
-        catalog[path_norm] = (int(row["TiempoMin"]), int(row["TiempoMax"]))
+        last_cat = None
+        last_sub = None
+
+        for _, row in df.iterrows():
+            cat = str(row["Categoria"]).strip() if pd.notna(row["Categoria"]) else last_cat
+            sub = str(row["Subcategoria"]).strip() if pd.notna(row["Subcategoria"]) else last_sub
+            item = str(row["Item"]).strip() if pd.notna(row["Item"]) else None
+
+            if pd.notna(row["Categoria"]):
+                last_cat = cat
+            if pd.notna(row["Subcategoria"]):
+                last_sub = sub
+
+            parts = [p for p in [cat, sub, item] if p]
+            path_completo = ".".join(parts)
+            path_norm = normalize_text(path_completo)
+            catalog[(case_type, path_norm)] = (int(row["TiempoMin"]), int(row["TiempoMax"]))
 
     return catalog
 
@@ -86,7 +91,7 @@ def load_cases(path: str, responsable: str) -> list:
 def generate_description(case: dict, catalog: dict) -> dict:
     """Genera descripción con IA para un caso."""
     cat_norm = normalize_text(case["category_raw"])
-    time_range = catalog.get(cat_norm)
+    time_range = catalog.get((case["case_type"], cat_norm))
 
     if not time_range:
         return {"status": "rejected", "reason": "No está en catálogo"}
@@ -166,7 +171,7 @@ def main():
     rejected = []
     for c in cases:
         cat_norm = normalize_text(c["category_raw"])
-        if cat_norm in catalog:
+        if (c["case_type"], cat_norm) in catalog:
             processable.append(c)
         else:
             rejected.append(c)

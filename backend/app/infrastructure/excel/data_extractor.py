@@ -31,6 +31,7 @@ class DataExtractor:
         "user_name",
         "area",
         "project",
+        "groups",
         "registered_at",
         "status",
         "final_category",
