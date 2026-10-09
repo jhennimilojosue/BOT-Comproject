@@ -37,7 +37,12 @@ class SQLAlchemyAIResultRepository:
         final_category: Optional[str] = None,
     ) -> AIResultModel:
         """
-        Guarda un resultado de IA.
+        Guarda un resultado de IA (idempotente por processing_id + case_id).
+
+        Si ya existe un resultado previo para el mismo processing y caso,
+        lo reemplaza en lugar de insertar un duplicado. Esto evita que
+        reprocesar un responsable (o ejecuciones dobles del frontend)
+        acumule filas repetidas en ai_results.
 
         Args:
             processing_id: ID del procesamiento
@@ -55,20 +60,39 @@ class SQLAlchemyAIResultRepository:
         Returns:
             Modelo guardado
         """
-        ai_result = AIResultModel(
-            processing_id=processing_id,
-            case_id=case_id,
-            case_code=case_code,
-            estimated_minutes=estimated_minutes,
-            generated_description=generated_description,
-            model_name=model_name,
-            tokens_used=tokens_used,
-            latency_ms=latency_ms,
-            case_type=case_type,
-            status=status,
-            final_category=final_category,
-        )
-        self._session.add(ai_result)
+        existing = self._session.execute(
+            select(AIResultModel).where(
+                AIResultModel.processing_id == processing_id,
+                AIResultModel.case_id == case_id,
+            )
+        ).scalar_one_or_none()
+
+        if existing is not None:
+            existing.case_code = case_code
+            existing.estimated_minutes = estimated_minutes
+            existing.generated_description = generated_description
+            existing.model_name = model_name
+            existing.tokens_used = tokens_used
+            existing.latency_ms = latency_ms
+            existing.case_type = case_type
+            existing.status = status
+            existing.final_category = final_category
+            ai_result = existing
+        else:
+            ai_result = AIResultModel(
+                processing_id=processing_id,
+                case_id=case_id,
+                case_code=case_code,
+                estimated_minutes=estimated_minutes,
+                generated_description=generated_description,
+                model_name=model_name,
+                tokens_used=tokens_used,
+                latency_ms=latency_ms,
+                case_type=case_type,
+                status=status,
+                final_category=final_category,
+            )
+            self._session.add(ai_result)
         self._session.flush()
         return ai_result
 
@@ -140,7 +164,7 @@ class SQLAlchemyAIResultRepository:
         Returns:
             Cantidad de resultados
         """
-        stmt = select(AIResultModel).where(
+        stmt = select(func.count()).select_from(AIResultModel).where(
             AIResultModel.processing_id == processing_id
         )
-        return len(list(self._session.execute(stmt).scalars().all()))
+        return int(self._session.execute(stmt).scalar() or 0)

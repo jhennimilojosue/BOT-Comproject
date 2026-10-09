@@ -47,3 +47,7 @@ Thumbs.db
 backend/.pytest_cache/
 test_data/*.xlsx
 test_data/*.xls
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

@@ -10,7 +10,7 @@ Responsabilidades:
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,6 +38,7 @@ class AIResultModel(Base):
 
     __tablename__ = "ai_results"
     __table_args__ = (
+        UniqueConstraint("processing_id", "case_id", name="uq_ai_results_processing_case"),
         Index("ix_ai_results_processing_id", "processing_id"),
         Index("ix_ai_results_case_id", "case_id"),
     )

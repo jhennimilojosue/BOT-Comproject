@@ -258,7 +258,8 @@ def process_responsible(
                 rejected += 1
 
         processing.status = "completed"
-        processing.processed_cases = (processing.processed_cases or 0) + results_count
+        total_results_db = ai_result_repo.count_by_processing(processing_id)
+        processing.processed_cases = total_results_db
         processing.rejected_cases = (processing.rejected_cases or 0) + rejected
         processing.completed_at = datetime.now(timezone.utc)
         db.commit()
