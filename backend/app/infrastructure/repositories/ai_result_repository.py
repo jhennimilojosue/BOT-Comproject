@@ -10,7 +10,7 @@ Responsabilidades:
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
 
 from ..database.models.ai_result import AIResultModel
