@@ -127,7 +127,9 @@ Case 1 ──── N AIResult
 | `latency_ms` | Float | Latencia de la respuesta (ms) |
 | `created_at` | DateTime(timezone) | Fecha de creación (UTC) |
 
-Migrations are applied with Alembic from `backend/alembic/versions/` (currently up to revision `007`).
+**Restricción:** `UNIQUE(processing_id, case_id)` (migración `010`). El repositorio `SQLAlchemyAIResultRepository.save()` es idempotente (upsert por `processing_id` + `case_id`), por lo que reprocesar un responsable no genera filas duplicadas.
+
+Migrations are applied with Alembic from `backend/alembic/versions/` (currently up to revision `010`).
 
 ## Common Commands
 

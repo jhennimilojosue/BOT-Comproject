@@ -4,6 +4,37 @@ Registro de correcciones realizadas en la documentación del proyecto BOT-COMPro
 
 ---
 
+## [2026-10-09] Frontend React + fix de duplicados en `ai_results`
+
+### Frontend (nuevo)
+- Nueva carpeta `frontend/` con SPA **React 19 + Vite 5** (puerto 5173, proxy `/api` → `http://localhost:8002`).
+- Flujo de 3 pasos en `App.jsx`: `UploadPage` (carga Excel) → `ResponsiblePage` (grupos/responsibles del maestro) → `ResultsPage` (procesamiento IA + reporte).
+- `src/api.js`: cliente HTTP con `uploadExcel`, `getResponsibles`, `processResponsible`, `getResults`, `getProcessing`.
+- `ResultsPage`: selector de semana (desde `semanas_disponibles`), filtros por número de caso/cliente/área (en memoria), edición de descripción por caso (en memoria, no persiste) y tabla de detalle.
+- `main.jsx` sin `StrictMode` (evita doble invocación del efecto de procesamiento en dev).
+- Build de producción: `npm run build` → `frontend/dist/`.
+
+### Fix de duplicados en `ai_results`
+- **Causa raíz:** `process-responsible` insertaba filas sin reemplazar las previas y React `StrictMode` (dev) montaba el efecto dos veces → llamadas duplicadas → filas repetidas en `ai_results` → claves React duplicadas y filtros que no se reflejaban en el detalle.
+- **Fix backend:**
+  - `SQLAlchemyAIResultRepository.save()` ahora es **idempotente** (upsert por `processing_id` + `case_id`).
+  - `count_by_processing()` optimizado con `func.count()`.
+  - `process-responsible` recalcula `processed_cases` desde la BD en lugar de acumular (`+=`).
+- **Migración `010_unique_ai_results`:** elimina duplicados existentes y crea `UNIQUE(processing_id, case_id)` en `ai_results`.
+- **Fix frontend:** se quitó `StrictMode` de `main.jsx` (el backend ya es idempotente; se evita el costo de doble inferencia).
+
+### Documentación actualizada
+- `README.md` (raíz): stack con frontend, estructura con `frontend/`, flujo con idempotencia, sección de frontend y puesta en marcha (`npm run dev`).
+- `docs/08_api/contratos_api.md`: versión 1.2, notas de `semanas_disponibles`, restricción UNIQUE, idempotencia y sección 6.1 de frontend.
+- `backend/DATABASE.md`: migración actual `010`, restricción UNIQUE en `ai_results`.
+
+### Archivos modificados (resumen):
+- **Frontend (nuevos):** `frontend/` completo (`src/api.js`, `src/App.jsx`, `src/main.jsx`, `src/pages/*`, `vite.config.js`, `package.json`).
+- **Backend:** `app/api/routes/ai.py` (conteo desde BD), `app/infrastructure/repositories/ai_result_repository.py` (save idempotente + `func` import), `app/infrastructure/database/models/ai_result.py` (UniqueConstraint), `alembic/versions/010_unique_ai_results.py` (nuevo).
+- **Docs:** `README.md`, `docs/00_changelog.md`, `docs/08_api/contratos_api.md`, `backend/DATABASE.md`.
+
+---
+
 ## [2026-09-08] División de horas por área y fecha de solución
 
 - `POST /api/v1/ai/process-responsible` y `GET /api/v1/ai/results/{processing_id}` retornan en `results_by_area`:

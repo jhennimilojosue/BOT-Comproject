@@ -1,6 +1,6 @@
 **Proyecto:** BOT-COMProject
 
-**Versión:** 1.1
+**Versión:** 1.2
 
 **Estado:** Definido
 
@@ -179,7 +179,29 @@ La API estará compuesta actualmente por los siguientes endpoints (estado real d
 >
 > Nota: los resultados de IA (`GET /ai/results/{processing_id}` y la respuesta de `POST /ai/process-responsible`) incluyen el campo `area` y `fecha_solucion` por resultado, el resumen `summary.by_area` (desglose `{ area: {count, hours} }`) y `results_by_area` con la estructura `{ área: { total_hours, by_date: { 'YYYY-MM-DD': { total_hours, cases: [resultado, ...] } }, sin_fecha: { total_hours, cases: [...] } } }` (los casos por área/por fecha de solución; casos sin área van a `Sin área` y sin fecha a `sin_fecha`).
 >
+> Nota: `GET /ai/results/{processing_id}` también retorna `semanas_disponibles` (semanas lunes→domingo derivadas de `fecha_solucion`, con `count` y `total_hours`) y `total_results_all` (total sin filtro de rango). El filtro por rango `fecha_inicio`/`fecha_fin` se aplica sobre `fecha_solucion`.
+>
+> Nota: `ai_results` tiene restricción `UNIQUE(processing_id, case_id)` (migración `010`). El repositorio `SQLAlchemyAIResultRepository.save()` es idempotente (upsert por `processing_id` + `case_id`), por lo que reprocesar un responsable no genera filas duplicadas. `processed_cases` del processing se recalcula desde la BD (`count_by_processing`) en lugar de acumular.
+>
 > Stubs no registrados en `main.py`: `GET /responsibles` (`routers/responsibles.py`), `GET /cases` y `GET /cases/{case_id}` (`routers/cases.py`).
+
+---
+
+# 6.1 Frontend (SPA React + Vite)
+
+El frontend es una SPA de 3 pasos (`frontend/src/App.jsx`) que consume la API V1 a través del proxy de Vite (`/api` → `http://localhost:8002`):
+
+| Paso | Página | Endpoints |
+|------|--------|-----------|
+| 1. Carga | `UploadPage.jsx` | `POST /api/v1/uploads` (multipart) |
+| 2. Responsable | `ResponsiblePage.jsx` | `GET /api/v1/cases/responsible?upload_id=` |
+| 3. Reporte | `ResultsPage.jsx` | `POST /api/v1/ai/process-responsible` → `GET /api/v1/ai/results/{processing_id}` |
+
+Funcionalidades del reporte (en memoria, no persisten):
+- Selector de semana (desde `semanas_disponibles`).
+- Filtros por número de caso, cliente y área.
+- Edición de la descripción generada por caso (solo sesión).
+- Tabla de detalle con caso, cliente, tipo, área, fecha de solución, descripción, tiempo y acción.
 
 ---
 

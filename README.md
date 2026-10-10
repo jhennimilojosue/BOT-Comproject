@@ -34,6 +34,7 @@ Estimación / Rechazo
 
 | Capa | Tecnología |
 |------|-----------|
+| Frontend | React 19 + Vite 5 (dev server puerto 5173, proxy `/api` → backend 8002) |
 | Backend | FastAPI + Python 3.11+ |
 | Base de datos | PostgreSQL 18 + SQLAlchemy 2.0 + Alembic |
 | Inteligencia Artificial | Ollama (`qwen2.5-coder:3b`) |
@@ -47,6 +48,14 @@ Estimación / Rechazo
 
 ```text
 Bot-Comproject/
+├── frontend/             # SPA React + Vite (3 pasos: carga → responsable → reporte)
+│   ├── src/
+│   │   ├── api.js        # Cliente HTTP (fetch) hacia /api/v1
+│   │   ├── App.jsx       # Máquina de estados: upload → responsible → results
+│   │   ├── main.jsx      # Punto de entrada (createRoot)
+│   │   └── pages/        # UploadPage, ResponsiblePage, ResultsPage (+ CSS)
+│   ├── vite.config.js    # Puerto 5173, proxy /api → http://localhost:8002
+│   └── package.json
 ├── backend/              # API FastAPI y toda la lógica
 │   ├── app/
 │   │   ├── api/          # Routers, schemas, dependencias, WebSocket
@@ -81,8 +90,22 @@ Bot-Comproject/
 
 ### Flujo
 1. `POST /api/v1/uploads` con el **Maestro de Casos** del usuario → devuelve `upload_id` + `processing_id` (status `pending`, `total_cases`).
-2. `POST /api/v1/ai/process-responsible` con `upload_id` + `responsible_name` → procesa **solo los casos de ese responsable** y guarda bajo el `processing_id` del archivo.
+2. `POST /api/v1/ai/process-responsible` con `upload_id` + `responsible_name` → procesa **solo los casos de ese responsable** y guarda bajo el `processing_id` del archivo. Es **idempotente**: `SQLAlchemyAIResultRepository.save()` hace upsert por `(processing_id, case_id)`, por lo que reprocesar no duplica filas (migración `010` agregó `UNIQUE(processing_id, case_id)`).
 3. Consultas: `GET /api/v1/processing/{processing_id}`, `GET /api/v1/ai/results/{processing_id}`, `GET /api/v1/processing/{processing_id}/export`.
+
+### Frontend (SPA React + Vite)
+
+Flujo de 3 pasos (`frontend/src/App.jsx`):
+
+1. **UploadPage** — drag & drop o selector de archivo (`.xlsx`/`.xls`); llama `POST /api/v1/uploads` y recibe `upload_id` + `processing_id`.
+2. **ResponsiblePage** — llama `GET /api/v1/cases/responsible?upload_id=` y muestra grupos (columna `groups` del Maestro) con sus responsables; al elegir, avanza al reporte.
+3. **ResultsPage** — llama `POST /api/v1/ai/process-responsible` (síncrono, puede tardar minutos) y luego `GET /api/v1/ai/results/{processing_id}`. Incluye:
+   - Selector de **semana** (semanas derivadas de `fecha_solucion`, vía `semanas_disponibles`).
+   - Filtros por **número de caso**, **cliente** y **área** (en memoria).
+   - **Edición de la descripción generada por caso** (en memoria, solo sesión; no persiste en BD).
+   - Tabla de detalle con caso, cliente, tipo, área, fecha de solución, descripción, tiempo y acción.
+
+> Nota: el frontend usa proxy de Vite (`/api` → `http://localhost:8002`); en producción servir `frontend/dist/`.
 
 ---
 
@@ -140,6 +163,16 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8002
 ```
 
 Swagger UI disponible en `http://localhost:8002/docs`.
+
+### Frontend (desarrollo)
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+```
+
+Build de producción: `npm run build` genera `frontend/dist/`.
 
 ### Requisito
 
