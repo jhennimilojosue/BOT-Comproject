@@ -106,7 +106,7 @@ Desarrollar un sistema capaz de procesar los casos registrados en el maestro de 
 - Procesar el archivo maestro de casos de Aranda.
 - Validar la estructura y consistencia del archivo.
 - Extraer únicamente la información requerida por el sistema.
-- Permitir seleccionar uno de los cinco responsables configurados.
+- Permitir seleccionar uno de los responsables de los cuatro grupos de trabajo configurados.
 - Identificar los casos correspondientes al responsable seleccionado.
 - Procesar únicamente los estados definidos como procesables.
 - Utilizar únicamente la categoría final del caso.
@@ -137,7 +137,7 @@ La primera versión permitirá:
 
 ## 7.2 Selección del responsable
 
-El sistema tendrá un catálogo de **cinco responsables configurados**.
+El sistema tendrá un catálogo de **cuatro grupos de trabajo con sus responsables**.
 
 El usuario deberá seleccionar uno antes de iniciar el procesamiento.
 
@@ -405,7 +405,7 @@ Los demás estados serán considerados no procesables.
 
 ## RN-002 — Responsable seleccionado
 
-Antes de procesar los casos deberá seleccionarse uno de los cinco responsables configurados.
+Antes de procesar los casos deberá seleccionarse uno de los responsables de los grupos de trabajo configurados.
 
 ---
 
@@ -617,7 +617,7 @@ Define el rango mínimo y máximo permitido para cada categoría final.
 
 ### Responsible Catalog
 
-Contiene los cinco responsables que pueden ser seleccionados para una ejecución.
+Contiene los responsables de los grupos de trabajo que pueden ser seleccionados para una ejecución.
 
 Ningún módulo deberá consultar directamente estos catálogos fuera del `Catalog Service`.
 
@@ -728,7 +728,7 @@ La primera versión será considerada exitosa cuando:
 
 - El sistema pueda cargar correctamente el maestro de casos.
 - El sistema valide la estructura del Excel.
-- Se puedan seleccionar los cinco responsables configurados.
+- Se puedan seleccionar los responsables de los grupos de trabajo configurados.
 - El sistema filtre correctamente los casos del responsable seleccionado.
 - `Solucionado` y `Cerrado` sean procesados correctamente.
 - Los demás estados sean excluidos.
@@ -785,5 +785,5 @@ Estas funcionalidades no deberán introducirse en V1 sin una modificación forma
 
 # 23. Definición Oficial de V1
 
-> **BOT-COMProject V1 será un sistema que recibe un maestro de casos de Aranda, permite seleccionar uno de cinco responsables, identifica sus casos procesables según el Catálogo de Estados, utiliza únicamente la categoría final de cada caso para consultar mediante el Catalog Service el rango de tiempo autorizado, utiliza el Estimation Engine para solicitar y validar una recomendación de tiempo mediante el AI Service y genera una descripción profesional. Finalmente presenta y permite exportar los resultados, sin realizar todavía el registro automático en COMProject.**
+> **BOT-COMProject V1 será un sistema que recibe un maestro de casos de Aranda, permite seleccionar uno de los responsables de los grupos de trabajo configurados, identifica sus casos procesables según el Catálogo de Estados, utiliza únicamente la categoría final de cada caso para consultar mediante el Catalog Service el rango de tiempo autorizado, utiliza el Estimation Engine para solicitar y validar una recomendación de tiempo mediante el AI Service y genera una descripción profesional. Finalmente presenta y permite exportar los resultados, sin realizar todavía el registro automático en COMProject.**
 >

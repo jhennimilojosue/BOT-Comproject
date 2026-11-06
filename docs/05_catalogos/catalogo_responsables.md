@@ -28,7 +28,7 @@ El catálogo permitirá que el sistema:
 
 Para la primera versión de BOT-COMProject:
 
-- Existirán **cinco responsables configurados**.
+- Existirán **cuatro grupos de trabajo con sus responsables configurados**.
 - Los responsables estarán definidos previamente en el catálogo.
 - El usuario deberá seleccionar un responsable antes de procesar los casos.
 - Solo podrán seleccionarse responsables que se encuentren habilitados.
@@ -63,19 +63,20 @@ La estructura propuesta para V1 será:
 
 ---
 
-# 5. Catálogo Inicial
+# 5. Catálogo Inicial por Grupos de Trabajo
 
-La V1 contará con cinco responsables.
+La V1 contará con cuatro grupos de trabajo, cada uno con sus responsables asociados. Un responsable podrá pertenecer a más de un grupo.
 
-| ID | Nombre | Activo | Observaciones |
-| --- | --- | --- | --- |
-| 1 | Responsable 1 | Sí | Responsable habilitado para procesamiento. |
-| 2 | Responsable 2 | Sí | Responsable habilitado para procesamiento. |
-| 3 | Responsable 3 | Sí | Responsable habilitado para procesamiento. |
-| 4 | Responsable 4 | Sí | Responsable habilitado para procesamiento. |
-| 5 | Responsable 5 | Sí | Responsable habilitado para procesamiento. |
+| ID | Grupo de Trabajo | Responsables |
+| --- | --- | --- |
+| 1 | SERVICE DESK | Brayan Jesiet Filot Diaz, Julian Andres Ramirez Ramirez, Maria Camila Beltran Bocanegra |
+| 2 | Soporte en sitio Corporativo | Catalina Ortiz Rojas, John David Laverde Tovar, Juan David Carreño Gomez, Julian Andres Ramirez Ramirez, Julian Camilo Reyes Guerrero, Luis Antonio Chavez Velasquez |
+| 3 | Soporte en sitio regional Cali | Santiago Arango Rios |
+| 4 | Soporte en sitio regional Medellín | Santiago Velasquez Taborda |
 
-> Los nombres reales de los cinco responsables deberán incorporarse cuando estén definidos oficialmente.
+Los responsables únicos del sistema son: Brayan Jesiet Filot Diaz, Catalina Ortiz Rojas, John David Laverde Tovar, Juan David Carreño Gomez, Julian Andres Ramirez Ramirez, Julian Camilo Reyes Guerrero, Luis Antonio Chavez Velasquez, Maria Camila Beltran Bocanegra, Santiago Arango Rios y Santiago Velasquez Taborda.
+
+Los nombres reales de los responsables del catálogo han sido incorporados oficialmente y están organizados por grupo de trabajo.
 > 
 
 ---
@@ -189,9 +190,9 @@ El responsable seleccionado deberá existir en el Catálogo de Responsables.
 
 Solo podrán seleccionarse responsables cuyo campo `activo` sea verdadero.
 
-### RCR-04 — Cinco responsables V1
+### RCR-04 — Grupos de trabajo V1
 
-La V1 tendrá cinco responsables configurados inicialmente.
+La V1 tendrá cuatro grupos de trabajo configurados inicialmente, cada uno con sus responsables asociados.
 
 ### RCR-05 — Identificación de casos
 
@@ -376,7 +377,7 @@ Antes de utilizar el catálogo, el `Catalog Service` deberá validar como mínim
 - Ausencia de identificadores duplicados.
 - Ausencia de responsables duplicados.
 - Valor válido de `activo`.
-- Existencia de los cinco responsables configurados para V1.
+- Existencia de los cuatro grupos de trabajo y sus responsables configurados para V1.
 
 Si el catálogo no cumple la estructura requerida, deberá generarse un error de configuración y el sistema no deberá utilizar información incompleta.
 
@@ -386,7 +387,7 @@ Si el catálogo no cumple la estructura requerida, deberá generarse un error de
 
 | Documento | Relación |
 | --- | --- |
-| **Project Charter** | Define que V1 tendrá cinco responsables configurados. |
+| **Project Charter** | Define que V1 tendrá cuatro grupos de trabajo con sus responsables configurados. |
 | **Análisis del Proceso de Negocio** | Define la selección del responsable antes del procesamiento. |
 | **Mapa de Módulos** | Define el uso del Catalog Service. |
 | **Diseño de Gestión de Casos** | Define el filtrado mediante `Responsible Name`. |
@@ -458,5 +459,5 @@ La lógica de consumo deberá permanecer desacoplada del origen de los datos.
 
 La definición oficial del catálogo es:
 
-> **El Catálogo de Responsables de BOT-COMProject V1 contiene los cinco responsables habilitados para ejecutar el procesamiento de casos. El usuario deberá seleccionar uno de ellos antes de iniciar una ejecución, y el sistema utilizará el campo `Responsible Name` del Maestro de Casos para identificar los casos correspondientes.**
+> **El Catálogo de Responsables de BOT-COMProject V1 contiene cuatro grupos de trabajo con sus respectivos responsables habilitados para ejecutar el procesamiento de casos. El usuario deberá seleccionar uno de ellos antes de iniciar una ejecución, y el sistema utilizará el campo `Responsible Name` del Maestro de Casos para identificar los casos correspondientes.**
 >

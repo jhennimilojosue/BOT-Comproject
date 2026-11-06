@@ -47,7 +47,7 @@ Un caso puede contener información como:
 
 Persona seleccionada por el usuario para realizar el procesamiento de un conjunto de casos.
 
-Los responsables disponibles para V1 corresponden a las cinco personas configuradas en el sistema.
+Los responsables disponibles para V1 corresponden a los cuatro grupos de trabajo configurados en el sistema.
 
 La selección del responsable se realiza antes de iniciar el procesamiento.
 
@@ -249,7 +249,7 @@ El Catálogo de Tiempos constituye la **fuente oficial de los rangos permitidos*
 
 Catálogo que contiene las personas disponibles para ser seleccionadas como responsables del procesamiento.
 
-En V1 contiene cinco responsables.
+En V1 contiene cuatro grupos de trabajo con sus respectivos responsables.
 
 ---
 

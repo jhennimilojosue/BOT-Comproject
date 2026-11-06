@@ -37,6 +37,9 @@ class AIResultResponse(BaseModel):
 
     case_code: str = Field(..., description="Código del caso")
     final_category: str = Field(..., description="Categoría del caso")
+    catalog_category: Optional[str] = Field(
+        None, description="Categoría del catálogo usada para estimar el tiempo (último nivel)"
+    )
     status: str = Field(..., description="Estado del caso")
     case_type: str = Field(..., description="Tipo (Incidente/Requerimiento)")
     cliente: Optional[str] = Field(None, description="Cliente del caso (columna Usuario del maestro)")
@@ -44,6 +47,10 @@ class AIResultResponse(BaseModel):
     fecha_solucion: Optional[str] = Field(
         None, description="Fecha de solución del caso (YYYY-MM-DD)"
     )
+    original_description: Optional[str] = Field(
+        None, description="Descripción original del caso"
+    )
+    solution: Optional[str] = Field(None, description="Solución registrada del caso")
     generated_description: str = Field(..., description="Descripción generada por IA")
     estimated_minutes: int = Field(..., description="Tiempo estimado en minutos")
     model_name: str = Field(..., description="Modelo de IA utilizado")

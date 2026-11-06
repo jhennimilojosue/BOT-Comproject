@@ -179,7 +179,7 @@ def process_responsible(
         db.refresh(processing)
 
         config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
-        provider = OllamaProvider()
+        provider = OllamaProvider(base_url=settings.ollama.base_url)
         ai_service = AIService(ai_provider=provider, config=config)
         ai_result_repo = SQLAlchemyAIResultRepository(db)
 
@@ -187,10 +187,21 @@ def process_responsible(
         results_count = 0
         rejected = 0
 
+        print(f"[DEBUG] processable_cases count: {len(processable_cases)}")
         for idx, case in enumerate(processable_cases):
             try:
+                matched_category = catalog_repo.find_by_path(case.final_category, case.case_type)
                 time_range = catalog_repo.get_time_range(case.final_category, case.case_type)
+                if time_range is None:
+                    rejected += 1
+                    continue
                 estimated_minutes = (time_range["min"] + time_range["max"]) // 2
+                catalog_item = case.final_category.split(".")[-1]
+                if matched_category:
+                    catalog_item = (
+                        matched_category.nivel3
+                        or matched_category.path_completo.split(".")[-1]
+                    )
 
                 case_data = {
                     "case_code": case.case_code,
@@ -219,6 +230,8 @@ def process_responsible(
                     ai_content = data.get("response", "")
                     tokens_used = data.get("eval_count", 0)
 
+                print(f"[DEBUG] Case {case.case_code}: ai_content_len={len(ai_content)}, status={response.status_code}")
+
                 if ai_content:
                     parsed = parser.parse_description(ai_content)
                     generated_description = parsed.text
@@ -241,11 +254,14 @@ def process_responsible(
                     results.append(AIResultResponse(
                         case_code=case.case_code,
                         final_category=case.final_category,
+                        catalog_category=catalog_item,
                         status=case.status,
                         case_type=case.case_type,
                         cliente=case.user_name,
                         area=case.area,
                         fecha_solucion=_format_fecha(case.fecha_solucion),
+                        original_description=case.description,
+                        solution=case.solution,
                         generated_description=generated_description,
                         estimated_minutes=estimated_minutes,
                         model_name=config.model,
@@ -539,16 +555,25 @@ async def get_results(
             )
 
         all_results = []
+        catalog_repo = SQLAlchemyCatalogoTiempoRepository(db)
         for r in db_results:
+            catalog_item = (r.final_category or "").split(".")[-1]
+            if r.case and r.case.final_category:
+                matched = catalog_repo.find_by_path(r.case.final_category, r.case.case_type)
+                if matched:
+                    catalog_item = matched.nivel3 or matched.path_completo.split(".")[-1]
             all_results.append(
                 AIResultResponse(
                     case_code=r.case_code,
                     final_category=r.final_category or "",
+                    catalog_category=catalog_item,
                     status=r.status or "",
                     case_type=r.case_type or "",
                     cliente=r.case.user_name if r.case else None,
                     area=r.case.area if r.case else None,
                     fecha_solucion=_format_fecha(r.case.fecha_solucion) if r.case else None,
+                    original_description=r.case.description if r.case else None,
+                    solution=r.case.solution if r.case else None,
                     generated_description=r.generated_description,
                     estimated_minutes=r.estimated_minutes,
                     model_name=r.model_name,
@@ -728,7 +753,7 @@ async def generate_description(request: DescriptionRequest):
         Descripción generada validada
     """
     try:
-        provider = OllamaProvider()
+        provider = OllamaProvider(base_url=settings.ollama.base_url)
         ai_service = AIService(ai_provider=provider)
 
         if not await ai_service.health_check():
@@ -798,7 +823,7 @@ async def estimate_time(request: EstimationRequest):
         Estimación de tiempo validada
     """
     try:
-        provider = OllamaProvider()
+        provider = OllamaProvider(base_url=settings.ollama.base_url)
         ai_service = AIService(ai_provider=provider)
 
         if not await ai_service.health_check():
@@ -864,7 +889,7 @@ async def ai_health_check():
     """
     try:
         config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
-        provider = OllamaProvider()
+        provider = OllamaProvider(base_url=settings.ollama.base_url)
         ai_service = AIService(ai_provider=provider, config=config)
 
         is_healthy = await ai_service.health_check()
@@ -935,7 +960,7 @@ def test_process_ai(
         raise HTTPException(status_code=404, detail={"error": "NO_CASES_IN_CATALOG"})
 
     config = AIConfig(model=settings.ollama.model, timeout=settings.ollama.timeout)
-    provider = OllamaProvider()
+    provider = OllamaProvider(base_url=settings.ollama.base_url)
     ai_service = AIService(ai_provider=provider, config=config)
     parser = ResponseParser()
 

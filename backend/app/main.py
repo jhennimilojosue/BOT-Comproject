@@ -66,7 +66,7 @@ async def health_check():
     
     db = next(get_db())
     try:
-        checker = HealthChecker(db_session=db)
+        checker = HealthChecker(db_session=db, ollama_url=settings.ollama.base_url)
         return checker.check_all()
     finally:
         db.close()

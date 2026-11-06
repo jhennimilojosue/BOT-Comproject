@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18-alpine
+    image: postgres:16-alpine
     container_name: bot_comproject_db
     env_file:
       - .env.docker
@@ -19,19 +19,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: bot_comproject_ollama
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-    restart: unless-stopped
+
 
   backend:
     build:
@@ -43,10 +31,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
     ports:
-      - "8002:8000"
+      - "1136:8000"
     restart: unless-stopped
 
   frontend:
@@ -62,4 +48,3 @@ services:
 
 volumes:
   pgdata:
-  ollama_data:

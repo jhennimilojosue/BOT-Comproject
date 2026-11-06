@@ -21,11 +21,12 @@ from psycopg2.extras import execute_values
 
 def normalize_path(s: str) -> str:
     """
-    Normaliza un path de categoría.
+    Normaliza un path de categor��a.
 
     - Convierte a minúsculas
     - Elimina tildes
     - Corrige typos comunes
+    - Normaliza espacios alrededor de puntuación (guiones, puntos, barras)
     - Elimina espacios extra
 
     Args:
@@ -34,10 +35,14 @@ def normalize_path(s: str) -> str:
     Returns:
         String normalizado
     """
+    import re
     s = s.lower().strip()
     s = unicodedata.normalize("NFD", s)
     s = "".join(c for c in s if unicodedata.category(c) != "Mn")
-    s = s.replace("  ", " ")
+    # Normalize spacing around punctuation
+    s = re.sub(r"\s*[-/]\s*", "-", s)
+    s = re.sub(r"\s*\.\s*", ".", s)
+    s = re.sub(r"\s+", " ", s)
     # Fix common typos
     s = s.replace("infrastructura", "infraestructura")
     return s
